@@ -1,0 +1,4 @@
+Ionita Radu-Alexandru 322CA
+Client-server-ul ruleaza conform asteptarilor , am rulat make random_file + make run_client + make run_server, si s-a trimis, dar asta s-a intamplat doar prima oara cand am rulat.
+Dupa care, am inceput sa primesc erori, si am reusit sa trimit doar numele fisierului.
+Motivul nu il inteleg, dar aici am ajuns cu efectuarea laboratorului.

@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "parser.h": "c",
+        "limits": "cpp",
+        "*.tcc": "cpp",
+        "types.h": "c"
+    }
+}
