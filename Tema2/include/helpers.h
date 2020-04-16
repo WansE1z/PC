@@ -1,17 +1,17 @@
+#include "serv_utils.h"
+
 #ifndef _HELPERS_H
 #define _HELPERS_H 1
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/socket.h> 
+#include <stdlib.h> 
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
-/*
- * Macro de verificare a erorilor
- * Exemplu:
- *     int fd = open(file_name, O_RDONLY);
- *     DIE(fd == -1, "open failed");
- */
-
-#define DIE(assertion, call_description)	\
+#define AssertTrue(assertion, call_description)	\
 	do {									\
 		if (assertion) {					\
 			fprintf(stderr, "(%s, %d): ",	\
@@ -22,6 +22,6 @@
 	} while(0)
 
 #define BUFLEN		256	// dimensiunea maxima a calupului de date
-#define MAX_CLIENTS	5	// numarul maxim de clienti in asteptare
-
+#define MAX_CLIENTS	10000	// numarul maxim de clienti in asteptare
+#define MAX_RECV (sizeof(cli_msg) + 1)
 #endif
