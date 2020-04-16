@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 	int n, i, ret;
 	socklen_t clilen;
 
-	int clients[10];
+	vector<int> clients(10);
 	int clients_num = 0;
 
 	fd_set read_fds;	// multimea de citire folosita in select()
