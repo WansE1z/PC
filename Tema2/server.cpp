@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     clientTcp clients[MAX_CLIENTS];
     // messageUdp* msg_udp;
 
-    for (i = 0; i < MAX_CLIENTS; ++i) {
+    for (int i = 0; i < MAX_CLIENTS; ++i) {
         clientList[i] = -1;
     }
     int clientCount = 0;
@@ -59,15 +59,11 @@ int main(int argc, char *argv[]) {
             break;
         }
         tmp_fds = read_fds;
-
         ret = select(fdmax + 1, &tmp_fds, nullptr, nullptr, nullptr);
         AssertTrue(ret < 0, "Can't select.");
-
         for (int i = 0; i <= fdmax; i++) {
             if (FD_ISSET(i, &tmp_fds)) {
                 if (i == sockTCP) {
-                    // a venit o cerere de conexiune pe socketul inactiv (cel cu
-                    // listen), pe care serverul o accepta
                     newsockfd =
                         accept(sockTCP, (sockaddr *)&newAddrTCP, &lenTCP);
                     AssertTrue(newsockfd < 0, "Can't be accepted.");
@@ -78,20 +74,21 @@ int main(int argc, char *argv[]) {
                     if (newsockfd > fdmax) {
                         fdmax = newsockfd;
                     }
-                    /*
-                      aici tb sa primim id-ul clientului, ca sa il printam
-                      clients[clientCount].id = ;
-                      clients[clientCount].id = 3 ?? gresit
-                    */
                     clientList[clientCount] = newsockfd;
-                    clients[clientCount].id = i;
-                    printf("New client %d connected from %s:%hu.\n",
-                           clients[clientCount].id,
+                    memset(buffer, 0, BUFLEN);
+                    bytesRecv = recv(newsockfd, buffer, sizeof(buffer), 0);
+                    AssertTrue (bytesRecv < 0,
+                    "There was no information received from TCP socket.");
+                    if (bytesRecv > 0){
+                        printf("New client %s connected from %s:%hu.\n",
+                           buffer,
                            inet_ntoa(newAddrTCP.sin_addr),
                            ntohs(newAddrTCP.sin_port));
+                    }
+                    strcpy(clients[clientCount].id, buffer);
+                    clients[clientCount].status = true;
+                    clients[clientCount].socket = newsockfd;
                     clientCount++;
-                    // printf("Noua conexiune de la %s, port %d, socket client
-                    // %d\n",
                 } else if (i == sockUDP) {
                     ret = recvfrom(sockUDP, buffer, BUFLEN, 0,
                                    (sockaddr *)&addrUDP, &lenUDP);
@@ -101,12 +98,13 @@ int main(int argc, char *argv[]) {
                     /*
                       de facut conexiunile
                     */
-                } else if (i == 0) {
+                } else if (i == 0) {                 
                     fgets(buffer, BUFLEN - 1, stdin);
                     if (strncmp(buffer, "exit", 4) == 0) {
                         exitFlag = true;
                         break;
                     }
+                    
                 } else {
                     // s-au primit date pe unul din socketii de client,
                     // asa ca serverul trebuie sa le receptioneze
@@ -118,15 +116,12 @@ int main(int argc, char *argv[]) {
 
                     if (bytesRecv == 0) {
                         // conexiunea s-a inchis
-                        /*
-                          Nu trebuie i, trebuie client_id
-                        */
-                        printf("Client %d disconnected.\n", i);
+                        for (int j = 0; j < clientCount; j++){
+                            if (clients[j].socket == newsockfd){
+                                printf("Client %s disconnected.", clients[j].id);
+                            }
+                        }
                         close(i);
-
-                        /*
-                          TODO: trebuie sa dam unsubscribe la toti
-                        */
                         for (int client = 0; client < clientCount; client++) {
                             if (clientList[client] == i) {
                                 clientList[client] = -1;
@@ -137,6 +132,7 @@ int main(int argc, char *argv[]) {
                         // se scoate din multimea de citire socketul inchis
                         FD_CLR(i, &read_fds);
                     } else {
+
                         /*
                           Aici dam subscribe/unsubscribe
                         */

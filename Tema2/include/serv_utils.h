@@ -22,7 +22,8 @@ struct topic {
 };
 
 struct clientTcp {
-    unsigned int id;
+    int socket;
+    char id[10];
     vector<topic> topics;
     bool status; // online/offline
     char last_message[];

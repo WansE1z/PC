@@ -65,7 +65,6 @@ int main(int argc, char *argv[]) {
                     bytesRecv = recv(sockfd, buffer, BUFLEN, 0);
                     AssertTrue(bytesRecv < 0,
                                "Error receiving data from the server.\n");
-
                     if (bytesRecv == 0) {
                         close(sockfd);
                         return 0;
