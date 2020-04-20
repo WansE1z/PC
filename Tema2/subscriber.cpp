@@ -1,64 +1,80 @@
-#include <bits/stdc++.h>
 #include "include/helpers.h"
-using namespace std;
 
-int main(int argc, char *argv[]){
-    int sfd,fdmax;
-    int n,ver;
+int main(int argc, char *argv[]) {
+    int sockfd, bytesRecv, ret;
+    int idLen = strlen(argv[1]);
+    sockaddr_in serv_addr;
     char buffer[BUFLEN];
-    fd_set read_fds;
-    fd_set tmp_fds;
-    FD_ZERO(&tmp_fds);
+    bool exitFlag = false;
+
+    AssertTrue(argc != 4,
+               "Usage: ./subscriber <ID> <IP_SERVER> <PORT_SERVER>. \n");
+    AssertTrue(idLen > 10, "The ID can't be more than 10 characters.");
+
+    fd_set read_fds;  // multimea de citire folosita in select()
+    fd_set tmp_fds;   // multime folosita temporar
+    int fdmax;        // valoare maxima fd din multimea read_fds
+
     FD_ZERO(&read_fds);
+    FD_ZERO(&tmp_fds);
 
-    if (argc < 3){
-        exit(0);
-    }
-
-    sfd = socket(AF_INET, SOCK_STREAM,0);
-    AssertTrue(sfd < 0, "socket has a problem");
-
-    FD_SET(sfd, &read_fds);
+    // Read stdin
     FD_SET(0, &read_fds);
-    fdmax = sfd;
 
-    struct sockaddr_in serv_addr;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    AssertTrue(sockfd < 0, "Can't open the server socket.\n");
+
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(atoi(argv[2]));
+    serv_addr.sin_port = htons(atoi(argv[3]));
+    ret = inet_aton(argv[2], &serv_addr.sin_addr);
+    AssertTrue(ret == 0, "The ip that was introduced isn't right.\n");
 
-    ver = inet_aton(argv[1], &serv_addr.sin_addr);
-    AssertTrue(ver < 0, "Inet_aton has a problem");
+    ret = connect(sockfd, (sockaddr *)&serv_addr, sizeof(serv_addr));
+    AssertTrue(ret < 0, "Can't connect to the server.\n");
+    AssertTrue(send(sockfd, argv[1], idLen + 1, 0) < 0,
+               "Can't send the ID to the server.");
 
-    ver = connect(sfd, (sockaddr *)&serv_addr, sizeof(serv_addr));
-    AssertTrue (ver < 0, "Connect could not have been made");
+    FD_SET(sockfd, &read_fds);
+    fdmax = sockfd;
 
-    while(1){
+    while (1) {
+        if (exitFlag) {
+            break;
+        }
         tmp_fds = read_fds;
-        ver = select(fdmax + 1, &tmp_fds, NULL, NULL, NULL);
-        AssertTrue (ver < 0, "Select has a problem");
 
-        if (FD_ISSET(0, &tmp_fds)) {
-            memset(buffer, 0, BUFLEN);
-            fgets(buffer, BUFLEN - 1, stdin);
-            if (!strcmp (buffer, "exit\n")){
-                cout << "Client disconnected from server.";
-                break;
+        ret = select(fdmax + 1, &tmp_fds, NULL, NULL, NULL);
+        AssertTrue(ret < 0, "Unable to select.");
+
+        for (int i = 0; i <= fdmax; i++) {
+            if (FD_ISSET(i, &tmp_fds)) {
+                if (i == 0) {
+                    memset(buffer, 0, BUFLEN);
+                    fgets(buffer, BUFLEN - 1, stdin);
+                    if (strncmp(buffer, "exit", 4) == 0) {
+                        exitFlag = true;
+                        break;
+                    }
+                    /*
+                        Verificarea ca se primeste comanda diferit de exit.
+                        Aici voi face subscribe/unsubscribe topic
+                    */
+                } else if (i == sockfd) {
+                    memset(buffer, 0, BUFLEN);
+                    // receive message froms server
+                    bytesRecv = recv(sockfd, buffer, BUFLEN, 0);
+                    AssertTrue(bytesRecv < 0,
+                               "Error receiving data from the server.\n");
+
+                    if (bytesRecv == 0) {
+                        close(sockfd);
+                        return 0;
+                    }
+                    // cout << "Received from server: " << buffer;
+                }
             }
-            n = send(sfd, buffer, BUFLEN, 0);
-            AssertTrue(n < 0, "Send has a problem");
-            printf("A client sent the message: %s\n", buffer);
-        } 
-        if (FD_ISSET(sfd, &tmp_fds)){
-            memset(buffer,0,BUFLEN);
-            n = recv(sfd,buffer,BUFLEN-1,0);
-            AssertTrue(n < 0, "Error from server"); 
-            if (n == 0){
-                cout << "Server closed connection with the client.";
-                break;
-            }    
-            cout << "Server sent the message " << buffer;
         }
     }
-    close(sfd);
-    shutdown(sfd,SHUT_RDWR);
+    close(sockfd);
+    return 0;
 }

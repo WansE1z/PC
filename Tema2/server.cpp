@@ -1,122 +1,169 @@
-#include <bits/stdc++.h>
 #include "include/helpers.h"
-using namespace std;
+#include "include/serv_utils.h"
 
-int main(int argc, char *argv[])
-{
-	int sockfd, newsockfd, portno;
-	char buffer[BUFLEN];
-	char notify_others[100];
-	char aux[4];
-	struct sockaddr_in serv_addr, cli_addr;
-	int n, i, ret;
-	socklen_t clilen;
+int main(int argc, char *argv[]) {
+    int sockTCP, sockUDP, newsockfd, portno;
+    char buffer[BUFLEN];
+    bool exitFlag = false;
+    struct sockaddr_in addrTCP, addrUDP, newAddrTCP;
+    int bytesRecv, ret;
+    socklen_t lenTCP = sizeof(sockaddr), lenUDP = sizeof(sockaddr);
+    int clientList[MAX_CLIENTS];
+    clientTcp clients[MAX_CLIENTS];
+    // messageUdp* msg_udp;
 
-	vector<int> clients(10);
-	int clients_num = 0;
+    for (i = 0; i < MAX_CLIENTS; ++i) {
+        clientList[i] = -1;
+    }
+    int clientCount = 0;
 
-	fd_set read_fds;	// multimea de citire folosita in select()
-	fd_set tmp_fds;		// multime folosita temporar
-	int fdmax;			// valoare maxima fd din multimea read_fds
+    fd_set read_fds;  // multimea de citire folosita in select()
+    fd_set tmp_fds;   // multime folosita temporar
+    int fdmax;        // valoare maxima fd din multimea read_fds
 
-	// se goleste multimea de descriptori de citire (read_fds) si multimea temporara (tmp_fds)
-	FD_ZERO(&read_fds);
-	FD_ZERO(&tmp_fds);
+    AssertTrue(argc != 2, "Usage: ./server <PORT>.\n");
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0); // se asteapta conexiuni
-	AssertTrue(sockfd < 0, "socket");
+    sockTCP = socket(AF_INET, SOCK_STREAM, 0);
+    AssertTrue(sockTCP < 0, "The TCP socket can't be created.\n");
 
-	portno = atoi(argv[1]);
-	AssertTrue(portno == 0, "atoi");
+    sockUDP = socket(AF_INET, SOCK_DGRAM, 0);
+    AssertTrue(sockUDP < 0, "The UDP socket can't be created.\n");
 
-	memset((char *) &serv_addr, 0, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(portno);
-	serv_addr.sin_addr.s_addr = INADDR_ANY;
+    portno = atoi(argv[1]);
+    AssertTrue(portno == 0, "The port number is not correct.\n");
 
-	ret = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(struct sockaddr));
-	AssertTrue(ret < 0, "bind");
+    addrTCP.sin_family = AF_INET;
+    addrTCP.sin_port = htons(portno);
+    addrTCP.sin_addr.s_addr = INADDR_ANY;
 
-	ret = listen(sockfd, MAX_CLIENTS);
-	AssertTrue(ret < 0, "listen");
+    addrUDP.sin_family = AF_INET;
+    addrUDP.sin_port = htons(portno);
+    addrUDP.sin_addr.s_addr = INADDR_ANY;
 
-	// se adauga noul file descriptor (socketul pe care se asculta conexiuni) in multimea read_fds
-	FD_SET(sockfd, &read_fds);
-	fdmax = sockfd;
+    ret = bind(sockTCP, (sockaddr *)&addrTCP, sizeof(sockaddr));
+    AssertTrue(ret < 0, "Can't bind TCP socket.\n");
+    ret = bind(sockUDP, (sockaddr *)&addrUDP, sizeof(sockaddr));
+    AssertTrue(ret < 0, "Can't bind UDP socket.\n");
 
-	while (1) {
-		tmp_fds = read_fds; 
-		
-		ret = select(fdmax + 1, &tmp_fds, NULL, NULL, NULL);
-		AssertTrue(ret < 0, "select");
+    ret = listen(sockTCP, MAX_CLIENTS);
+    AssertTrue(ret < 0, "Can't listen the TCP socket.\n");
 
-		for (i = 0; i <= fdmax; i++) {
-			if (FD_ISSET(i, &tmp_fds)) {
-				if (i == sockfd) {
-					// a venit o cerere de conexiune pe socketul inactiv (cel cu listen),
-					// pe care serverul o accepta
-					clilen = sizeof(cli_addr);
-					newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-					AssertTrue(newsockfd < 0, "accept");
+    FD_ZERO(&read_fds);
+    FD_SET(sockUDP, &read_fds);
+    FD_SET(sockTCP, &read_fds);
+    FD_SET(0, &read_fds);
+    fdmax = sockTCP;
 
-					// se adauga noul socket intors de accept() la multimea descriptorilor de citire
-					FD_SET(newsockfd, &read_fds);
-					if (newsockfd > fdmax) { 
-						fdmax = newsockfd;
-					}
+    while (1) {
+        if (exitFlag) {
+            break;
+        }
+        tmp_fds = read_fds;
 
-					printf("Noua conexiune de la %s, port %d, socket client %d\n",
-						   inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port), newsockfd);
+        ret = select(fdmax + 1, &tmp_fds, nullptr, nullptr, nullptr);
+        AssertTrue(ret < 0, "Can't select.");
 
-					// adauga-l in lista de clienti
-					clients[clients_num++] = newsockfd;
-					sprintf(notify_others, "[UPDATE] New client: %d\n", newsockfd);
-					
-					char others[100] = "Other clients are: ";
+        for (int i = 0; i <= fdmax; i++) {
+            if (FD_ISSET(i, &tmp_fds)) {
+                if (i == sockTCP) {
+                    // a venit o cerere de conexiune pe socketul inactiv (cel cu
+                    // listen), pe care serverul o accepta
+                    newsockfd =
+                        accept(sockTCP, (sockaddr *)&newAddrTCP, &lenTCP);
+                    AssertTrue(newsockfd < 0, "Can't be accepted.");
 
-					for (int j = 0; j < clients_num - 1; j++) {
-						sprintf(aux, "%d", clients[j]);
-						strcat(others, aux);
-						strcat(others, " ");
-						send(clients[j], notify_others, strlen(notify_others), 0);
-					}
-					if (clients_num > 1) {
-						strcat(others, "\n");
-						send(newsockfd, others, strlen(others), 0);
-					}
+                    // se adauga noul socket intors de accept() la multimea
+                    // descriptorilor de citire
+                    FD_SET(newsockfd, &read_fds);
+                    if (newsockfd > fdmax) {
+                        fdmax = newsockfd;
+                    }
+                    /*
+                      aici tb sa primim id-ul clientului, ca sa il printam
+                      clients[clientCount].id = ;
+                      clients[clientCount].id = 3 ?? gresit
+                    */
+                    clientList[clientCount] = newsockfd;
+                    clients[clientCount].id = i;
+                    printf("New client %d connected from %s:%hu.\n",
+                           clients[clientCount].id,
+                           inet_ntoa(newAddrTCP.sin_addr),
+                           ntohs(newAddrTCP.sin_port));
+                    clientCount++;
+                    // printf("Noua conexiune de la %s, port %d, socket client
+                    // %d\n",
+                } else if (i == sockUDP) {
+                    ret = recvfrom(sockUDP, buffer, BUFLEN, 0,
+                                   (sockaddr *)&addrUDP, &lenUDP);
+                    AssertTrue(
+                        ret < 0,
+                        "There was no info received from the UDP socket.\n");
+                    /*
+                      de facut conexiunile
+                    */
+                } else if (i == 0) {
+                    fgets(buffer, BUFLEN - 1, stdin);
+                    if (strncmp(buffer, "exit", 4) == 0) {
+                        exitFlag = true;
+                        break;
+                    }
+                } else {
+                    // s-au primit date pe unul din socketii de client,
+                    // asa ca serverul trebuie sa le receptioneze
+                    memset(buffer, 0, BUFLEN);
+                    bytesRecv = recv(i, buffer, sizeof(buffer), 0);
+                    AssertTrue(
+                        bytesRecv < 0,
+                        "There was no information received from TCP socket.");
 
-				} else {
-					// s-au primit date pe unul din socketii de client,
-					// asa ca serverul trebuie sa le receptioneze
-					memset(buffer, 0, BUFLEN);
-					n = recv(i, buffer, sizeof(buffer), 0);
-					AssertTrue(n < 0, "recv");
+                    if (bytesRecv == 0) {
+                        // conexiunea s-a inchis
+                        /*
+                          Nu trebuie i, trebuie client_id
+                        */
+                        printf("Client %d disconnected.\n", i);
+                        close(i);
 
-					if (n == 0) {
-						// conexiunea s-a inchis
-						printf("Socket-ul client %d a inchis conexiunea\n", i);
-						close(i);
+                        /*
+                          TODO: trebuie sa dam unsubscribe la toti
+                        */
+                        for (int client = 0; client < clientCount; client++) {
+                            if (clientList[client] == i) {
+                                clientList[client] = -1;
+                                break;
+                            }
+                        }
 
-						sprintf(notify_others, "[UPDATE] Client %d closed connection\n", i);
-
-						for (int j = 0; j < clients_num; j++) {
-							if (j != i) {
-								send(clients[j], notify_others, strlen(notify_others), 0);
-							}
-						}
-						
-						// se scoate din multimea de citire socketul inchis 
-						FD_CLR(i, &read_fds);
-					} else {
-						send(atoi(buffer), buffer + 2, strlen(buffer) - 2, 0);
-						printf("S-a primit de la clientul de pe socketul %d mesajul: %s\n", i, buffer);
-					}
-				}
-			}
-		}
-	}
-
-	close(sockfd);
-
-	return 0;
+                        // se scoate din multimea de citire socketul inchis
+                        FD_CLR(i, &read_fds);
+                    } else {
+                        /*
+                          Aici dam subscribe/unsubscribe
+                        */
+                        if (isdigit(buffer[0])) {
+                            int target = buffer[0] - 48;
+                            // Check if the client exists
+                            for (int client = 0; client < clientCount;
+                                 client++) {
+                                if (clientList[client] == target) {
+                                    send(target, buffer, strlen(buffer), 0);
+                                }
+                            }
+                        } else {
+                            for (int client = 0; client < clientCount;
+                                 client++) {
+                                if (clientList[client] != i &&
+                                    clientList[client] != -1) {
+                                    send(clientList[client], buffer,
+                                         strlen(buffer), 0);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    close(sockTCP);
+    return 0;
 }
