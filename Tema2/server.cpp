@@ -1,6 +1,8 @@
 #include "include/helpers.h"
 #include "include/serv_utils.h"
-
+#include <string.h>
+#include <vector>
+#include <map>
 int main(int argc, char *argv[]) {
     int sockTCP, sockUDP, newsockfd, portno;
     char buffer[BUFLEN];
@@ -8,14 +10,8 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in addrTCP, addrUDP, newAddrTCP;
     int bytesRecv, ret;
     socklen_t lenTCP = sizeof(sockaddr), lenUDP = sizeof(sockaddr);
-    int clientList[MAX_CLIENTS];
-    clientTcp clients[MAX_CLIENTS];
-    // messageUdp* msg_udp;
-
-    for (int i = 0; i < MAX_CLIENTS; ++i) {
-        clientList[i] = -1;
-    }
     int clientCount = 0;
+    vector<clientTcp> clients(MAX_CLIENTS);
 
     fd_set read_fds;  // multimea de citire folosita in select()
     fd_set tmp_fds;   // multime folosita temporar
@@ -74,7 +70,6 @@ int main(int argc, char *argv[]) {
                     if (newsockfd > fdmax) {
                         fdmax = newsockfd;
                     }
-                    clientList[clientCount] = newsockfd;
                     memset(buffer, 0, BUFLEN);
                     bytesRecv = recv(newsockfd, buffer, sizeof(buffer), 0);
                     AssertTrue (bytesRecv < 0,
@@ -95,16 +90,12 @@ int main(int argc, char *argv[]) {
                     AssertTrue(
                         ret < 0,
                         "There was no info received from the UDP socket.\n");
-                    /*
-                      de facut conexiunile
-                    */
                 } else if (i == 0) {                 
                     fgets(buffer, BUFLEN - 1, stdin);
                     if (strncmp(buffer, "exit", 4) == 0) {
                         exitFlag = true;
                         break;
                     }
-                    
                 } else {
                     // s-au primit date pe unul din socketii de client,
                     // asa ca serverul trebuie sa le receptioneze
@@ -117,49 +108,54 @@ int main(int argc, char *argv[]) {
                     if (bytesRecv == 0) {
                         // conexiunea s-a inchis
                         for (int j = 0; j < clientCount; j++){
-                            if (clients[j].socket == newsockfd){
-                                printf("Client %s disconnected.", clients[j].id);
+                            if (clients[j].socket == i && clients[j].status == true){
+                                printf("Client %s disconnected.\n", clients[j].id);
+                                clients[j].status = false;
                             }
                         }
                         close(i);
-                        for (int client = 0; client < clientCount; client++) {
-                            if (clientList[client] == i) {
-                                clientList[client] = -1;
-                                break;
-                            }
-                        }
-
                         // se scoate din multimea de citire socketul inchis
                         FD_CLR(i, &read_fds);
                     } else {
-
-                        /*
-                          Aici dam subscribe/unsubscribe
-                        */
-                        if (isdigit(buffer[0])) {
-                            int target = buffer[0] - 48;
-                            // Check if the client exists
-                            for (int client = 0; client < clientCount;
-                                 client++) {
-                                if (clientList[client] == target) {
-                                    send(target, buffer, strlen(buffer), 0);
+                        string id;
+                        char *aux;
+                        aux = strtok(buffer, " ");
+                        aux = strtok(nullptr, " ");
+                        for (int j = 0; j < clientCount; j++){
+                            if (clients[j].socket == i && clients[j].status == true){
+                                if(buffer[0] == 's') {
+                                    clients[j].topics.push_back(aux);
+                                    aux = strtok(nullptr, " ");
+                                    if(aux[0] == '0') {
+                                        clients[j].sf.push_back(false);
+                                    }
+                                    if(aux[0] == '1') {
+                                        clients[j].sf.push_back(true);
+                                    }
                                 }
-                            }
-                        } else {
-                            for (int client = 0; client < clientCount;
-                                 client++) {
-                                if (clientList[client] != i &&
-                                    clientList[client] != -1) {
-                                    send(clientList[client], buffer,
-                                         strlen(buffer), 0);
+                                if(buffer[0] == 'u'){
+                                    string str(aux);
+                                    str.erase(str.size()-1);
+                                    int pos = -1;
+                                    for(long unsigned int x = 0; x < clients[j].topics.size(); x++) {
+                                        if(clients[j].topics[x].compare(str) == 0) {
+                                            pos = j;
+                                        }
+                                    }
+                                    if(pos >= 0) {
+                                        clients[j].topics.erase(clients[j].topics.begin() + pos);
+                                        clients[j].sf.erase(clients[j].sf.begin() + pos);
+                                    }
                                 }
-                            }
+                            }	
                         }
                     }
                 }
             }
         }
     }
-    close(sockTCP);
+    for (int i = 0; i <= fdmax; i++){
+        close(i);
+    }
     return 0;
 }

@@ -25,6 +25,6 @@ using namespace std;
 	} while(0)
 
 #define BUFLEN		1560	// dimensiunea maxima a calupului de date
-#define MAX_CLIENTS	10000	// numarul maxim de clienti in asteptare
+#define MAX_CLIENTS	1000	// numarul maxim de clienti in asteptare
 #define MAX_RECV (sizeof(cli_msg) + 1)
 #endif

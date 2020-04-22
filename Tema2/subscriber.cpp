@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
                         exitFlag = true;
                         break;
                     }
+                    send(sockfd, buffer, strlen(buffer), 0);
                     /*
                         Verificarea ca se primeste comanda diferit de exit.
                         Aici voi face subscribe/unsubscribe topic
@@ -69,7 +70,12 @@ int main(int argc, char *argv[]) {
                         close(sockfd);
                         return 0;
                     }
-                    // cout << "Received from server: " << buffer;
+                    while (bytesRecv){
+                        cout << "Received from server: " << buffer;
+                        bytesRecv = recv(sockfd, buffer, BUFLEN, 0);
+                        AssertTrue(bytesRecv < 0,
+                                "Error receiving data from the server.\n");
+                    }
                 }
             }
         }
