@@ -30,5 +30,6 @@ run_subscriber: clean subscriber
 	@echo "New client connected to the server..."
 	@./subscriber ${ID} ${IP} ${PORT}
 
-
+udp:
+	python3 ./checker/udp_client.py --source-port 1234 --input_file ./checker/sample_payloads.json --delay 10 --mode all_once $(IP) $(PORT)
 

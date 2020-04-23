@@ -54,14 +54,12 @@ int main(int argc, char *argv[]) {
                 } else if (i == sockfd) {
                     memset(buffer, 0, BUFLEN);
                     bytesRecv = recv(sockfd, buffer, BUFLEN, 0);
-                    if (bytesRecv < 0) {
-                        printf(
-                            "The number of bytes received should be greater "
-                            "than 0.\n");
-                    } else if (bytesRecv == 0) {
+                    Assert(bytesRecv < 0, "Number of bytes should be greater than 0.\n");
+                    if (bytesRecv == 0) {
                         close(sockfd);
                         return 0;
                     }
+                    cout << "Received: " << buffer << endl;
                 }
             }
         }

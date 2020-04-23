@@ -13,7 +13,6 @@ using namespace std;
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-
 #include <map>
 #include <vector>
 
@@ -39,7 +38,7 @@ struct clientTcp {
     int socket;
     char id[10];
     vector<string> topics;
-    vector<bool> sf;
+    vector<int> sf;
     bool status;  // online/offline
 };
 
@@ -97,39 +96,53 @@ bool exitFunction(char buffer[]) {
     return false;
 }
 
-void subscribe(char *bufCpy, vector<clientTcp> &clients, int j) {
-    string str(bufCpy);
-    clients[j].topics.push_back(str);
-    bufCpy = strtok(nullptr, " ");
-    if (bufCpy[0] == '0') {
-        clients[j].sf.push_back(false);
-    }
-    if (bufCpy[0] == '1') {
-        clients[j].sf.push_back(true);
-    }
+void printTopics(vector<clientTcp> &clients, int j) {
     for (long unsigned int x = 0; x < clients[j].topics.size(); x++) {
         cout << clients[j].topics[x];
     }
     cout << endl;
 }
 
-void unsubscribe(char *bufCpy, vector<clientTcp> &clients, int j) {
-    string str(bufCpy);
-    str.erase(str.size() - 1);
-    int pos = -1;
-    for (long unsigned int x = 0; x < clients[j].topics.size(); x++) {
-        if (clients[j].topics[x].compare(str) == 0) {
-            pos = x;
-        }
-    }
-    if (pos >= 0) {
-        clients[j].topics.erase(clients[j].topics.begin() + pos);
-        clients[j].sf.erase(clients[j].sf.begin() + pos);
-    }
-    for (long unsigned int x = 0; x < clients[j].topics.size(); x++) {
-        cout << clients[j].topics[x];
+void printSf(vector<clientTcp> &clients, int j) {
+    for (long unsigned int x = 0; x < clients[j].sf.size(); x++) {
+        cout << clients[j].sf[x];
     }
     cout << endl;
+}
+
+void subscribe(char *bufCpy, vector<clientTcp> &clients, int j) {
+    string str(bufCpy);
+    // using constructor to make the array of chars a string
+    clients[j].topics.push_back(str);
+    // adding the topic to the array of topics
+    bufCpy = strtok(nullptr, " ");
+    // now i go over the " " and add the SF's to the vector
+    if (bufCpy[0] == '0') {
+        clients[j].sf.push_back(0);
+    }
+    if (bufCpy[0] == '1') {
+        clients[j].sf.push_back(1);
+    }
+    printTopics(clients, j);
+    printSf(clients,j);
+
+}
+
+void unsubscribe(char *bufCpy, vector<clientTcp> &clients, int j) {
+    int x = 0;
+    string str(bufCpy);
+    str.erase(str.size() - 1);
+    vector<string>::iterator itTopic;
+    itTopic = find(clients[j].topics.begin(), clients[j].topics.end(), str);
+    for (auto i = clients[j].topics.begin();i <= itTopic; i++){
+        x++;
+    }
+    if (itTopic != clients[j].topics.end()) {
+        clients[j].topics.erase(itTopic);
+        clients[j].sf.erase(clients[j].sf.begin() + x - 1);
+    }
+    printTopics(clients, j);
+    printSf(clients,j);
 }
 
 int returnSwitch(int i, int socket1, int socket2) {
@@ -149,4 +162,18 @@ int returnSwitch(int i, int socket1, int socket2) {
     }
     return value;
 }
+void updateClient(char id[], char buffer[], int sockTCPnew, int clientCount, vector<clientTcp> &clients) {
+    strcpy(id, buffer);
+    strcpy(clients[clientCount].id, id);
+    clients[clientCount].status = true;
+    clients[clientCount].socket = sockTCPnew;
+}
+
+int updateFD(int sockTCPnew, int fdmax) {
+    if (sockTCPnew > fdmax) {
+        fdmax = sockTCPnew;
+    }
+    return fdmax;
+}
+
 #endif  // SERV_UTILS_H
