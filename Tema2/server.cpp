@@ -1,7 +1,7 @@
 #include "include/serv_utils.hpp"
 
 int main(int argc, char *argv[]) {
-    int sockTCP, sockUDP, sockTCPnew, portNr, bytesRecv, verify, clientCount = 0, fdmax;
+    int sockTCP, sockUDP, sockTCPnew, portNr, bytesRecv, verify, clientCount = 0, fdmax, value;
     char buffer[BUFLEN];
     bool exitFlag = false;
     char id[11];
@@ -53,54 +53,60 @@ int main(int argc, char *argv[]) {
         Assert(select(fdmax + 1, &multTmp, NULL, NULL, NULL) < 0, "Can't select.");
         for (int i = 0; i <= fdmax; i++) {
             if (FD_ISSET(i, &multTmp)) {
-                if (i == sockTCP) {
-                    sockTCPnew = accept(sockTCP, (sockaddr *)&addrTCPnew, &lenTCP);
-                    Assert(sockTCPnew < 0, "Can't be accepted.");
-                    FD_SET(sockTCPnew, &multRead);
-                    if (sockTCPnew > fdmax) {
-                        fdmax = sockTCPnew;
-                    }
-                    memset(buffer, 0, BUFLEN);
-                    bytesRecv = recv(sockTCPnew, buffer, sizeof(buffer), 0);
-                    strcpy(id, buffer);
-                    strcpy(clients[clientCount].id, id);
-                    clients[clientCount].status = true;
-                    clients[clientCount].socket = sockTCPnew;
-                    clientCount++;
-                    connectServer(addrTCPnew, bytesRecv, id);
-                } else if (i == sockUDP) {
-                    bytesRecv = recvfrom(sockUDP, buffer, BUFLEN, 0, (sockaddr *)&addrUDP, &lenUDP);
-                    Assert(bytesRecv < 0, "There was no info received from the UDP socket.\n");
-                } else if (i == 0) {
-                    exitFlag = exitFunction(buffer);
-                    if (exitFlag) break;
-                } else {
-                    memset(buffer, 0, BUFLEN);
-                    bytesRecv = recv(i, buffer, sizeof(buffer), 0);
-                    if (bytesRecv == 0) {
-                        disconnectServer(clients, i, clientCount);
-                        FD_CLR(i, &multRead);
-                    } else {
-                        char *bufCpy;
-                        bufCpy = strtok(buffer, " ");
-                        bufCpy = strtok(nullptr, " ");
-                        for (int j = 0; j < clientCount; j++) {
-                            if (clients[j].socket == i && clients[j].status == true) {
-                                if (buffer[0] == 's') {
-                                    subscribe(bufCpy, clients, j);
-                                }
-                                if (buffer[0] == 'u') {
-                                    unsubscribe(bufCpy, clients, j);
+                value = returnSwitch(i, sockTCP, sockUDP);
+                switch (value) {
+                    case 1:
+                        sockTCPnew = accept(sockTCP, (sockaddr *)&addrTCPnew, &lenTCP);
+                        Assert(sockTCPnew < 0, "Can't be accepted.");
+                        FD_SET(sockTCPnew, &multRead);
+                        if (sockTCPnew > fdmax) {
+                            fdmax = sockTCPnew;
+                        }
+                        memset(buffer, 0, BUFLEN);
+                        bytesRecv = recv(sockTCPnew, buffer, sizeof(buffer), 0);
+                        strcpy(id, buffer);
+                        strcpy(clients[clientCount].id, id);
+                        clients[clientCount].status = true;
+                        clients[clientCount].socket = sockTCPnew;
+                        clientCount++;
+                        connectServer(addrTCPnew, bytesRecv, id);
+                        break;
+                    case 2:
+                        bytesRecv = recvfrom(sockUDP, buffer, BUFLEN, 0, (sockaddr *)&addrUDP, &lenUDP);
+                        Assert(bytesRecv < 0, "There was no info received from the UDP socket.\n");
+                        break;
+                    case 3:
+                        exitFlag = exitFunction(buffer);
+                        if (exitFlag) break;
+                        break;
+                    case 4:
+                        memset(buffer, 0, BUFLEN);
+                        bytesRecv = recv(i, buffer, sizeof(buffer), 0);
+                        if (bytesRecv == 0) {
+                            disconnectServer(clients, i, clientCount);
+                            FD_CLR(i, &multRead);
+                        } else {
+                            char *bufCpy;
+                            bufCpy = strtok(buffer, " ");
+                            bufCpy = strtok(nullptr, " ");
+                            for (int j = 0; j < clientCount; j++) {
+                                if (clients[j].socket == i && clients[j].status == true) {
+                                    if (buffer[0] == 's') {
+                                        subscribe(bufCpy, clients, j);
+                                    }
+                                    if (buffer[0] == 'u') {
+                                        unsubscribe(bufCpy, clients, j);
+                                    }
                                 }
                             }
                         }
-                    }
+                        break;
                 }
             }
         }
     }
-    for (auto i : clients){
-        for (auto j : i.topics){
+    for (auto i : clients) {
+        for (auto j : i.topics) {
             cout << j << " ";
         }
     }
