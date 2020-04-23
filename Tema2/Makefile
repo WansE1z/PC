@@ -1,24 +1,34 @@
-CC = g++ -std=c++17 -Wall -Wextra -lm
-
-all: build
+CC = g++ 
+CFLAGS = -std=c++17 -Wall -Wextra -Wno-unused-parameter
+IP = 127.0.0.1
+PORT = 8000
+ID = WansE
 
 build: server subscriber
 
 server: server.o
 	$(CC) $^ -o $@
 
-server.o : server.cpp
-	$(CC) $^ -c
-
 subscriber: subscriber.o
 	$(CC) $^ -o $@
 
-subscriber.o: subscriber.cpp
-	$(CC) $^ -c
+%.o: %.cpp
+	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
-	rm *.o server subscriber
+	-@rm -f *.o server subscriber
 
+beauty:
+	clang-format -i -style=file *.cpp
+	clang-format -i -style=file */*.hpp
+
+run_server: clean server
+	@echo "Server is running..."
+	@./server ${PORT}
+	
+run_subscriber: clean subscriber
+	@echo "New client connected to the server..."
+	@./subscriber ${ID} ${IP} ${PORT}
 
 
 
