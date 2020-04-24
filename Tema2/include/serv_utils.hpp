@@ -13,6 +13,7 @@ using namespace std;
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+
 #include <map>
 #include <vector>
 
@@ -22,6 +23,14 @@ using namespace std;
             fprintf(stderr, "(%s, %d): ", __FILE__, __LINE__); \
             perror(call_description);                          \
             exit(EXIT_FAILURE);                                \
+        }                                                      \
+    } while (0)
+
+#define AssertCheck(assertion, call_description)               \
+    do {                                                       \
+        if (assertion) {                                       \
+            fprintf(stderr, "(%s, %d): ", __FILE__, __LINE__); \
+            perror(call_description);                          \
         }                                                      \
     } while (0)
 
@@ -56,18 +65,41 @@ void closeAllSockets(int fdmax) {
 void printMessage(char buffer[]) {
     string str(buffer);
     string substr;
-    size_t found;
     if (buffer[0] == 's') {
-        found = str.find("subscribe");
-        Assert(found == string::npos, "Usage: subscribe topic sf.");
         substr = str.substr(10, str.size());
         substr.erase(substr.end() - 3, substr.end() - 1);
         cout << "subscribed " << substr;
     } else if (buffer[0] == 'u') {
-        found = str.find("unsubscribe");
-        Assert(found == string::npos, "Usage: subscribe topic sf.");
         substr = str.substr(12, str.size());
         cout << "unsubscribed " << substr;
+    }
+}
+
+void verifySubUnsubCommand(int sockfd, char buffer[]) {
+    size_t found;
+    string str(buffer);
+    int flag = 0;
+    if (buffer[0] == 's') {
+        found = str.find("subscribe");
+        if (found != string::npos) {
+            flag = 1;
+        }
+    }
+    if (buffer[0] == 'u') {
+        found = str.find("unsubscribe");
+        if (found != string::npos) {
+            flag = 1;
+        }
+    }
+    if (flag == 1) {
+        send(sockfd, buffer, strlen(buffer), 0);
+        printMessage(buffer);
+    } else {
+        if (buffer[0] == 's') {
+            printf("Usage must be: subscribe topic sf, not %s", buffer);
+        } else if (buffer[0] == 'u') {
+            printf("Usage must be: unsubscribe topic, not %s", buffer);
+        }
     }
 }
 
@@ -124,8 +156,7 @@ void subscribe(char *bufCpy, vector<clientTcp> &clients, int j) {
         clients[j].sf.push_back(1);
     }
     printTopics(clients, j);
-    printSf(clients,j);
-
+    printSf(clients, j);
 }
 
 void unsubscribe(char *bufCpy, vector<clientTcp> &clients, int j) {
@@ -134,7 +165,7 @@ void unsubscribe(char *bufCpy, vector<clientTcp> &clients, int j) {
     str.erase(str.size() - 1);
     vector<string>::iterator itTopic;
     itTopic = find(clients[j].topics.begin(), clients[j].topics.end(), str);
-    for (auto i = clients[j].topics.begin();i <= itTopic; i++){
+    for (auto i = clients[j].topics.begin(); i <= itTopic; i++) {
         x++;
     }
     if (itTopic != clients[j].topics.end()) {
@@ -142,7 +173,7 @@ void unsubscribe(char *bufCpy, vector<clientTcp> &clients, int j) {
         clients[j].sf.erase(clients[j].sf.begin() + x - 1);
     }
     printTopics(clients, j);
-    printSf(clients,j);
+    printSf(clients, j);
 }
 
 int returnSwitch(int i, int socket1, int socket2) {

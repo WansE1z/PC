@@ -84,8 +84,8 @@ int main(int argc, char *argv[]) {
                     case 2:
                         bytesRecv = recvfrom(sockUDP, buffer, BUFLEN, 0, (sockaddr *)&addrUDP, &lenUDP);
                         Assert(bytesRecv < 0, "There was no info received from the UDP socket.\n");
-                        for(int x = 0; x < clientCount; x++) {  
-                            send(clients[x].socket, buffer, strlen(buffer),0);
+                        for (int x = 0; x < clientCount; x++) {
+                            send(clients[x].socket, buffer, strlen(buffer), 0);
                         }
                         break;
                     case 3:

@@ -49,8 +49,7 @@ int main(int argc, char *argv[]) {
                     memset(buffer, 0, BUFLEN);
                     exitFlag = exitFunction(buffer);
                     if (exitFlag) break;
-                    send(sockfd, buffer, strlen(buffer), 0);
-                    printMessage(buffer);
+                    verifySubUnsubCommand(sockfd, buffer);
                 } else if (i == sockfd) {
                     memset(buffer, 0, BUFLEN);
                     bytesRecv = recv(sockfd, buffer, BUFLEN, 0);
