@@ -3,10 +3,10 @@ Language: Cpp
 BasedOnStyle: Google
 AccessModifierOffset: -1
 AlignOperands: true
-ColumnLimit: 120
+ColumnLimit: 81
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
-IndentWidth: 4
+IndentWidth: 2
 IndentWrappedFunctionNames: false
 ReflowComments: true
 SortIncludes: true
