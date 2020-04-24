@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
                         bytesRecv = recv(sockTCPnew, buffer, sizeof(buffer), 0);
                         Assert(bytesRecv < 0, "Id wasn't sent.");
                         updateClient(id, buffer, sockTCPnew, clientCount, clients);
-                        connectServer(addrTCPnew, bytesRecv, id);
+                        connectServer(addrTCPnew, bytesRecv, clientCount, clients);
                         clientCount++;
                         break;
                     case 2:

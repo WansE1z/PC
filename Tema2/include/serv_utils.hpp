@@ -103,15 +103,24 @@ void verifySubUnsubCommand(int sockfd, char buffer[]) {
     }
 }
 
-void connectServer(sockaddr_in addrTCPnew, int bytesRecv, char id[]) {
+void connectServer(sockaddr_in addrTCPnew, int bytesRecv, int clientCount, vector<clientTcp> &clients) {
+    // string str(clients[clientCount].id);
+    // std::vector<string>::iterator it;
+    // it = find(clients.begin(),clients.end(),str);
     if (bytesRecv > 0) {
-        printf("New client %s connected from %s:%hu.\n", id, inet_ntoa(addrTCPnew.sin_addr),
-               ntohs(addrTCPnew.sin_port));
+        if (clients[clientCount].status == false) {
+            printf("New client %s connected from %s:%hu.\n", clients[clientCount].id, inet_ntoa(addrTCPnew.sin_addr),
+                   ntohs(addrTCPnew.sin_port));
+            clients[clientCount].status = true;
+        } else {
+            printf("The client %s is already connected", clients[clientCount].id);
+        }
     }
 }
 
 void disconnectServer(vector<clientTcp> &clients, int i, int clientCount) {
     for (int j = 0; j < clientCount; j++) {
+        // if the socket is the one that it should be
         if (clients[j].socket == i && clients[j].status == true) {
             printf("Client %s disconnected.\n", clients[j].id);
             clients[j].status = false;
@@ -122,6 +131,7 @@ void disconnectServer(vector<clientTcp> &clients, int i, int clientCount) {
 
 bool exitFunction(char buffer[]) {
     fgets(buffer, BUFLEN - 1, stdin);
+    // the condition to exit the program
     if (strncmp(buffer, "exit", 4) == 0) {
         return true;
     }
@@ -152,9 +162,11 @@ void subscribe(char *bufCpy, vector<clientTcp> &clients, int j) {
     if (bufCpy[0] == '0') {
         clients[j].sf.push_back(0);
     }
+    // adds the sf to the client
     if (bufCpy[0] == '1') {
         clients[j].sf.push_back(1);
     }
+    // debugging purposes
     printTopics(clients, j);
     printSf(clients, j);
 }
@@ -196,7 +208,6 @@ int returnSwitch(int i, int socket1, int socket2) {
 void updateClient(char id[], char buffer[], int sockTCPnew, int clientCount, vector<clientTcp> &clients) {
     strcpy(id, buffer);
     strcpy(clients[clientCount].id, id);
-    clients[clientCount].status = true;
     clients[clientCount].socket = sockTCPnew;
 }
 
