@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[]) {
   int sockfd, bytesRecv, ret;
-  int idLen = strlen(argv[1]); // length of id 
+  int idLen = strlen(argv[1]);  // length of id
   sockaddr_in serv_addr;
   char buffer[BUFLEN];
   bool exitFlag = false;
@@ -65,8 +65,9 @@ int main(int argc, char *argv[]) {
       if (exitFlag) break;
       /*
        in the function below i check if the commands that were given are correct
-       if the commands are incorrect, it will be shown in the subscriber's terminal
-       that the usage is incorrect, and the correct way of introducing the command.
+       if the commands are incorrect, it will be shown in the subscriber's
+       terminal that the usage is incorrect, and the correct way of introducing
+       the command.
       */
       verifySubUnsubCommand(sockfd, buffer);
     }
