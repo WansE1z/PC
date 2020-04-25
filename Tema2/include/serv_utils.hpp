@@ -42,8 +42,8 @@ using namespace std;
     }                                            \
   } while (0)
 
-#define BUFLEN 1576           // the buffer's maximum length
-#define MSGLEN 1576           // the message's max length
+#define BUFLEN 1600           // the buffer's maximum length
+#define MSGLEN 1600           // the message's max length
 #define MAX_SUBSCRIBERS 1000  // the max number of clients
 #define DISCONNECT 0          // bytes received = 0
 
@@ -58,6 +58,17 @@ using namespace std;
 #define SHORT_REAL 1
 #define FLOAT 2
 #define STRING 3
+
+/*
+  the structure below stores the udp message
+  it has topic, that stores the topic the client is subbing to
+  data_type, which can be 0/1/2/3
+  0 - INT
+  1 - SHORT_REAL
+  2 - FLOAT
+  3 - STRING
+  ip, used for the message and port as well for message.
+*/
 
 struct messageUdp {
   char topic[50];
@@ -284,9 +295,6 @@ void subscribe(char *bufCpy, vector<subscriber> &clients, int j) {
     AssertCheck(itTopic != clients[j].topics.end(),
                 "You are not allowed to subscribe to the same topic twice.");
   }
-  // debugging purposes
-  printTopics(clients, j);
-  printSf(clients, j);
 }
 
 void unsubscribe(char *bufCpy, vector<subscriber> &clients, int j) {
@@ -319,8 +327,6 @@ void unsubscribe(char *bufCpy, vector<subscriber> &clients, int j) {
     // print error
     AssertCheck(itTopic == clients[j].topics.end(), "The topic doesn't exist.");
   }
-  printTopics(clients, j);
-  printSf(clients, j);
 }
 
 /*
@@ -435,7 +441,6 @@ void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
       float power = 1;
       uint8_t exp = *(uint8_t *)(buffer + 56);
       uint32_t number = *(uint32_t *)(buffer + 52);
-      uint32_t result;
       strcat(message, "- FLOAT - ");
 
       // if the sign is 1, which means the bit is set, then add a -
@@ -460,14 +465,16 @@ void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
       break;
     }
     case STRING: {
-      // clean the char array
-      strcpy(message, "");
-
       string str(buffer + 51); 
       // using the string constructor, make a string containing the payload
-      
+
+      // if the size of the string is more than 1500, resize it
+      if (str.size()>1500){
+        str.resize(1500);
+      }      
       // concat the new string to the char array
       strcat(message, str.c_str());
+
       break;
     }
   }

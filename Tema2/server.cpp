@@ -153,21 +153,26 @@ int main(int argc, char *argv[]) {
             }
             memset(msg.data, 0, sizeof(msg));
 
-            // put in the data array the message built previously
-            strcat(msg.data, message);
-
             // setting the ip
             strcat(msg.ip, inet_ntoa(addrUDP.sin_addr));
 
             // setting the port
             msg.port = ntohs(addrUDP.sin_port);
 
+            // put in the data array the message built previously
+            strcat(msg.data, message);
+            
             // sending the information to all of the clients
             for (int x = 0; x < subCont; x++) {
-              send(subscribers[x].socket, &msg, sizeof(messageUdp), 0);
+              for (long unsigned int k = 0; k < subscribers[x].topics.size(); k++){
+                if (msg.topic == subscribers[x].topics[k]){
+                  send(subscribers[x].socket, &msg, sizeof(messageUdp), 0);
+                }
+              }
             }
-            memset(message, 0, MSGLEN);
+
             // setting the whole vector, in order to not have leaks
+            memset(message, 0, MSGLEN);
             memset(msg.topic, 0, sizeof(msg));
             memset(msg.data, 0, sizeof(msg));
             break;
