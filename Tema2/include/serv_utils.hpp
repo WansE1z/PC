@@ -102,6 +102,7 @@ struct subscriber {
   vector<char> id;
   vector<string> topics;
   vector<int> sf;
+  vector<int> last_message;
   bool status;
 };
 
@@ -171,7 +172,7 @@ void verifySubUnsubCommand(int sockfd, char buffer[]) {
     }
     if (buffer[len] == '0' || buffer[len] == '1') {
       // the sf must be 0/1, in case it isn't, show error
-      flag = 1;
+      flag = 1;  // in order to print a %s, it was need to be casted.
     } else {
       flag = 0;
     }
@@ -207,7 +208,8 @@ void verifySubUnsubCommand(int sockfd, char buffer[]) {
 }
 
 void connectServer(sockaddr_in addrTCPnew, int bytesRecv, int clientCount,
-                   vector<subscriber> &clients) {
+                   vector<subscriber> &clients,
+                   map<string, vector<messageUdp>> subscribersMsg, int sockfd) {
   /*
    if the number of bytes received is greater than 0, that means that the id
    was sent to the server, so we can post it.
@@ -220,14 +222,31 @@ void connectServer(sockaddr_in addrTCPnew, int bytesRecv, int clientCount,
         no reason to connect him twice.
       */
 
+      // needed to cast in order to print %s
       printf("New client %s connected from %s:%hu.\n",
              reinterpret_cast<char *>(clients[clientCount].id.data()),
              inet_ntoa(addrTCPnew.sin_addr), ntohs(addrTCPnew.sin_port));
+
+      // update client's status to online
       clients[clientCount].status = true;
+
+      // iterate through the topics, and i send to the clients who are subbed at
+      // those topics with the specific sfs
+      for (long unsigned int i = 0; i < clients[clientCount].topics.size();
+           i++) {
+        for (long unsigned int k = clients[clientCount].last_message[i] + 1;
+             k < subscribersMsg[clients[clientCount].topics[i]].size(); k++) {
+          send(sockfd, &subscribersMsg[clients[clientCount].topics[i]][k],
+               sizeof(subscribersMsg[clients[clientCount].topics[i]][k]), 0);
+        }
+
+        // update the clients last message position
+        clients[clientCount].last_message[i] =
+            subscribersMsg[clients[clientCount].topics[i]].size() - 1;
+      }
     } else {
       printf("The client %s is already connected.",
              reinterpret_cast<char *>(clients[clientCount].id.data()));
-      // in order to print a %s, it was need to be casted.
     }
   }
 }
@@ -279,6 +298,8 @@ void subscribe(char *bufCpy, vector<subscriber> &clients, int j) {
   vector<string>::iterator itTopic;
   itTopic = find(clients[j].topics.begin(), clients[j].topics.end(), str);
   if (itTopic == clients[j].topics.end()) {
+    // sf needed, keep the last message
+    clients[j].last_message.push_back(0);
     clients[j].topics.push_back(str);
     // adding the topic to the array of topics
     bufCpy = strtok(nullptr, " ");
@@ -448,30 +469,29 @@ void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
         strcat(message, "-");
       }
 
-      // variable that stores the power of the 10^exp 
-      power = pow(10,exp);
+      // variable that stores the power of the 10^exp
+      power = pow(10, exp);
 
       // the conditions below return the right string
       if (power == 1) {
         helper = to_string(ntohl(number));
       } else {
         helper = to_string(ntohl(number) / power);
-        
+
         // delete the last two decimals in order to keep the first 4
-        helper.erase(helper.end() - 2,
-                     helper.end());
+        helper.erase(helper.end() - 2, helper.end());
       }
       strcat(message, helper.c_str());
       break;
     }
     case STRING: {
-      string str(buffer + 51); 
+      string str(buffer + 51);
       // using the string constructor, make a string containing the payload
 
       // if the size of the string is more than 1500, resize it
-      if (str.size()>1500){
+      if (str.size() > 1500) {
         str.resize(1500);
-      }      
+      }
       // concat the new string to the char array
       strcat(message, str.c_str());
 

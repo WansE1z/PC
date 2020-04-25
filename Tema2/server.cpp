@@ -8,7 +8,11 @@ int main(int argc, char *argv[]) {
   socklen_t lenTCP = sizeof(sockaddr), lenUDP = sizeof(sockaddr);
   // the length of addrTCP --- length of addrUDP
   sockaddr_in addrTCP, addrUDP, addrTCPnew;
-  vector<subscriber> subscribers(MAX_SUBSCRIBERS);
+  vector<subscriber> subscribers(MAX_SUBSCRIBERS);  // the vector of subscribers
+
+  // map that stores the messages of subscribers
+  map<string, vector<messageUdp>> subscribersMsg;
+
   /*
       the vector of clients that stores all the information about each client
       For example : topic / status(online/offline)
@@ -113,7 +117,8 @@ int main(int argc, char *argv[]) {
             updateClient(buffer, sockTCPnew, subCont, subscribers);
 
             // connecting to the server
-            connectServer(addrTCPnew, bytesRecv, subCont, subscribers);
+            connectServer(addrTCPnew, bytesRecv, subCont, subscribers,
+                          subscribersMsg, sockTCPnew);
 
             // as the number of clients has increased, i increment the counter
             subCont++;
@@ -137,8 +142,8 @@ int main(int argc, char *argv[]) {
              temporary array of chars that i use to store the message that will
              be shown in the client terminal
             */
-            char message[MSGLEN];
-            bzero(&message, MSGLEN);
+            char mssg[MSGLEN];
+            bzero(&mssg, MSGLEN);
 
             // the first 50 bytes are the topic, so i copy them into the
             // structure
@@ -149,7 +154,7 @@ int main(int argc, char *argv[]) {
 
             // if there were bytes received from udp client
             if (bytesRecv > 0) {
-              parsingUDP(msg, message, buffer);
+              parsingUDP(msg, mssg, buffer);
             }
             memset(msg.data, 0, sizeof(msg));
 
@@ -160,19 +165,31 @@ int main(int argc, char *argv[]) {
             msg.port = ntohs(addrUDP.sin_port);
 
             // put in the data array the message built previously
-            strcat(msg.data, message);
-            
-            // sending the information to all of the clients
+            strcat(msg.data, mssg);
+
+            // pushing into the map at the specific topic the structure
+            subscribersMsg[msg.topic].push_back(msg);
+
+            // sending the information to all of the clients subbed to a topic
             for (int x = 0; x < subCont; x++) {
-              for (long unsigned int k = 0; k < subscribers[x].topics.size(); k++){
-                if (msg.topic == subscribers[x].topics[k]){
-                  send(subscribers[x].socket, &msg, sizeof(messageUdp), 0);
+              for (long unsigned int k = 0; k < subscribers[x].topics.size();
+                   k++) {
+                // if the topic found is the same in the both structures
+
+                if (msg.topic == subscribers[x].topics[k]) {
+                  // if the client's status is true
+                  if (subscribers[x].status == true) {
+                    // sending the message
+                    send(subscribers[x].socket, &msg, sizeof(messageUdp), 0);
+
+                    // updating the last message
+                    subscribers[x].last_message[k]++;
+                  }
                 }
               }
             }
-
             // setting the whole vector, in order to not have leaks
-            memset(message, 0, MSGLEN);
+            memset(mssg, 0, MSGLEN);
             memset(msg.topic, 0, sizeof(msg));
             memset(msg.data, 0, sizeof(msg));
             break;
