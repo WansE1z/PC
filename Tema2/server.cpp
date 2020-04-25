@@ -70,6 +70,9 @@ int main(int argc, char *argv[]) {
 
   while (1) {
     if (exitFlag) {
+      subscribers.clear();
+      subscribers.shrink_to_fit();
+      closeAllSockets(fdmax);
       break;
     }
     /*
@@ -102,7 +105,7 @@ int main(int argc, char *argv[]) {
             FD_SET(sockTCPnew, &multRead);
             // setting the new socket
 
-            memset(buffer, 0, BUFLEN);
+            bzero(&buffer, BUFLEN);
             bytesRecv = recv(sockTCPnew, buffer, sizeof(buffer), 0);
             Assert(bytesRecv < 0, "Id wasn't sent.");
 
@@ -124,11 +127,64 @@ int main(int argc, char *argv[]) {
                                  (sockaddr *)&addrUDP, &lenUDP);
             Assert(bytesRecv < 0,
                    "There was no info received from the UDP socket.\n");
-
+            messageUdp msg;
+            memcpy(&msg, buffer, bytesRecv);
+            char message[BUFLEN];
+            bzero(&message, BUFLEN);
+            strcpy(msg.topic, buffer);
+            strcpy(msg.ip, inet_ntoa(addrUDP.sin_addr));
+            msg.port = ntohs(addrUDP.sin_port);
+            msg.data_type = *(uint8_t *)(buffer + 50);
+            if (bytesRecv > 0) {
+              if (msg.data_type == 0) {
+                strcat(message, "INT - ");
+                if (*(uint8_t *)(buffer + 51) == 1) {
+                  strcat(message, "-");
+                }
+                strcat(message,
+                       to_string(ntohl(*(uint32_t *)(buffer + 52))).c_str());
+              }
+              if (msg.data_type == 1) {
+                strcat(message, "SHORT_REAL - ");
+                string helper;
+                helper = to_string(ntohs(*(uint16_t *)(buffer + 51)) / 100.0);
+                helper.erase(helper.end() - 4, helper.end());
+                strcat(message, helper.c_str());
+              }
+              if (msg.data_type == 2) {
+                float decimal = 1;
+                strcat(message, "FLOAT - ");
+                if (*(int8_t *)(buffer + 51) == 1) {
+                  strcat(message, "-");
+                }
+                for (uint8_t j = 0; j < *(uint8_t *)(buffer + 56); j++) {
+                  decimal *= 10.0;
+                }
+                string helper;
+                if (decimal == 1) {
+                  helper = to_string(ntohl(*(uint32_t *)(buffer + 52)));
+                } else {
+                  helper =
+                      to_string(ntohl(*(uint32_t *)(buffer + 52)) / decimal);
+                  helper.erase(helper.end() - (6 - *(uint8_t *)(buffer + 56)),
+                               helper.end());
+                }
+                strcat(message, helper.c_str());
+              }
+              if (msg.data_type == 3) {
+                strcpy(message, "");
+                string str(buffer + 51);
+                strcat(message, str.c_str());
+              }
+            }
+            memset(msg.data, 0, sizeof(msg));
+            strcat(msg.data, message);
             // sending the information to all of the clients
             for (int x = 0; x < subCont; x++) {
-              send(subscribers[x].socket, buffer, strlen(buffer), 0);
+              send(subscribers[x].socket, (char *)&msg, sizeof(messageUdp), 0);
             }
+            memset(msg.topic, 0, sizeof(msg));
+            memset(msg.data, 0, sizeof(msg));
             break;
           case EXITAPP:
             // in this case i == 0, so there was an exit command received
@@ -136,7 +192,7 @@ int main(int argc, char *argv[]) {
             if (exitFlag) break;
             break;
           case SUBANDUNSUB:
-            memset(buffer, 0, BUFLEN);
+            bzero(&buffer, BUFLEN);
             bytesRecv = recv(i, buffer, sizeof(buffer), 0);
 
             /*
@@ -167,12 +223,5 @@ int main(int argc, char *argv[]) {
       }
     }
   }
-  for (auto i : subscribers) {
-    for (auto j : i.topics) {
-      cout << j << " ";
-    }
-  }
-  cout << endl;
-  closeAllSockets(fdmax);
   return 0;
 }

@@ -42,8 +42,8 @@ using namespace std;
     }                                            \
   } while (0)
 
-#define BUFLEN 1560           // dimensiunea maxima a calupului de date
-#define MAX_SUBSCRIBERS 1000  // numarul maxim de clienti in asteptare
+#define BUFLEN 1600           // the buffer's maximum length
+#define MAX_SUBSCRIBERS 1000  // the max number of clients
 #define DISCONNECT 0          // bytes received = 0
 
 // the values used below are for the switch
@@ -53,9 +53,11 @@ using namespace std;
 #define SUBANDUNSUB 4
 
 struct messageUdp {
-  char topic[51];
+  char topic[50];
   unsigned int data_type;
-  char data[1501];
+  char data[1500];
+  char ip[16];
+  uint16_t port;
 };
 
 /*
@@ -324,14 +326,14 @@ void subscribeAndUnsubscribe(vector<subscriber> &clients, char buffer[],
   char *bufCpy;
   bufCpy = strtok(buffer, " ");
   bufCpy = strtok(NULL, " ");
-  
+
   for (int j = 0; j < clientCount; j++) {
     // if the status of the client is true and the socket is the one good
     if (clients[j].socket == i && clients[j].status == true) {
       // if the first char is 's', then it is a subscribe command
       if (buffer[0] == 's') {
         subscribe(bufCpy, clients, j);
-      } 
+      }
       // if the first is 'u', it is a unsubscribe command
       if (buffer[0] == 'u') {
         unsubscribe(bufCpy, clients, j);

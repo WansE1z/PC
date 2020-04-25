@@ -6,6 +6,7 @@ int main(int argc, char *argv[]) {
   sockaddr_in serv_addr;
   char buffer[BUFLEN];
   bool exitFlag = false;
+  messageUdp *recv_msg;
 
   Assert(argc != 4, "Usage: ./subscriber <ID> <IP_SERVER> <PORT_SERVER>. \n");
   Assert(idLen > 10, "The ID can't be more than 10 characters.");
@@ -55,7 +56,7 @@ int main(int argc, char *argv[]) {
     // checking if the select was made in the proper way
 
     if (FD_ISSET(0, &multTmp)) {
-      memset(buffer, 0, BUFLEN);
+      bzero(&buffer, BUFLEN);
       // declaring the buffer
       exitFlag = exitFunction(buffer);
       /*
@@ -72,7 +73,7 @@ int main(int argc, char *argv[]) {
       verifySubUnsubCommand(sockfd, buffer);
     }
     if (FD_ISSET(sockfd, &multTmp)) {
-      memset(buffer, 0, BUFLEN);
+      bzero(&buffer, BUFLEN);
       // declaring the buffer
       bytesRecv = recv(sockfd, buffer, BUFLEN, 0);
       // receiving the messages sent from the server
@@ -83,7 +84,10 @@ int main(int argc, char *argv[]) {
         return 0;
       }
       // print what you receive
-      cout << "Received: " << buffer << endl;
+      recv_msg = (messageUdp *)buffer;
+      cout << recv_msg->ip << ":" << recv_msg->port << " - " << recv_msg->topic
+           << " " << recv_msg->data << endl;
+      
     }
   }
   close(sockfd);

@@ -1,5 +1,5 @@
 CC = g++ 
-CFLAGS = -std=c++17 -Wall -Wextra -Wno-unused-parameter
+CFLAGS = -g -std=c++17 -Wall -Wextra -Wno-unused-parameter
 IP = 127.0.0.1
 PORT = 8000
 ID = WansE
