@@ -43,6 +43,7 @@ using namespace std;
   } while (0)
 
 #define BUFLEN 1576           // the buffer's maximum length
+#define MSGLEN 1576           // the message's max length
 #define MAX_SUBSCRIBERS 1000  // the max number of clients
 #define DISCONNECT 0          // bytes received = 0
 
@@ -432,7 +433,6 @@ void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
     case FLOAT: {
       string helper;
       float power = 1;
-      int flag = 0;
       uint8_t exp = *(uint8_t *)(buffer + 56);
       uint32_t number = *(uint32_t *)(buffer + 52);
       uint32_t result;
@@ -442,31 +442,31 @@ void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
       if (sign == 1) {
         strcat(message, "-");
       }
-      // variable that stores the power of 10^
-      power = pow(10, exp);
+
+      // variable that stores the power of the 10^exp 
+      power = pow(10,exp);
+
+      // the conditions below return the right string
       if (power == 1) {
-        // if it is 1, then the result is that
-        result = ntohl(number);
-
+        helper = to_string(ntohl(number));
       } else {
-        // else, i have a flag that in case it isn't 1, i have to delete from the
-        // string that i created above "helper"
-        flag = 1;
-        result = ntohl(number) / power;
-      }
-
-      // put the result in the string in order to concat it to the char array
-      helper = to_string(result);
-      if (flag == 1) {
-
-        helper.erase(helper.end() + exp - 6, helper.end());
+        helper = to_string(ntohl(number) / power);
+        
+        // delete the last two decimals in order to keep the first 4
+        helper.erase(helper.end() - 2,
+                     helper.end());
       }
       strcat(message, helper.c_str());
       break;
     }
     case STRING: {
+      // clean the char array
       strcpy(message, "");
-      string str(buffer + 51);
+
+      string str(buffer + 51); 
+      // using the string constructor, make a string containing the payload
+      
+      // concat the new string to the char array
       strcat(message, str.c_str());
       break;
     }

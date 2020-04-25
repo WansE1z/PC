@@ -137,8 +137,8 @@ int main(int argc, char *argv[]) {
              temporary array of chars that i use to store the message that will
              be shown in the client terminal
             */
-            char message[BUFLEN];
-            bzero(&message, BUFLEN);
+            char message[MSGLEN];
+            bzero(&message, MSGLEN);
 
             // the first 50 bytes are the topic, so i copy them into the
             // structure
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
             for (int x = 0; x < subCont; x++) {
               send(subscribers[x].socket, &msg, sizeof(messageUdp), 0);
             }
-
+            memset(message, 0, MSGLEN);
             // setting the whole vector, in order to not have leaks
             memset(msg.topic, 0, sizeof(msg));
             memset(msg.data, 0, sizeof(msg));
