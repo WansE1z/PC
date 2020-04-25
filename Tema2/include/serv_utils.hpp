@@ -424,25 +424,42 @@ void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
        four ones that are in the string
       */
       helper.erase(helper.end() - 4, helper.end());
+
+      // helper.c_str() converts from string to char[]
       strcat(message, helper.c_str());
       break;
     }
     case FLOAT: {
-      float decimal = 1;
+      string helper;
+      float power = 1;
+      int flag = 0;
+      uint8_t exp = *(uint8_t *)(buffer + 56);
+      uint32_t number = *(uint32_t *)(buffer + 52);
+      uint32_t result;
       strcat(message, "- FLOAT - ");
-      if (*(int8_t *)(buffer + 51) == 1) {
+
+      // if the sign is 1, which means the bit is set, then add a -
+      if (sign == 1) {
         strcat(message, "-");
       }
-      for (uint8_t j = 0; j < *(uint8_t *)(buffer + 56); j++) {
-        decimal *= 10.0;
-      }
-      string helper;
-      if (decimal == 1) {
-        helper = to_string(ntohl(*(uint32_t *)(buffer + 52)));
+      // variable that stores the power of 10^
+      power = pow(10, exp);
+      if (power == 1) {
+        // if it is 1, then the result is that
+        result = ntohl(number);
+
       } else {
-        helper = to_string(ntohl(*(uint32_t *)(buffer + 52)) / decimal);
-        helper.erase(helper.end() - (6 - *(uint8_t *)(buffer + 56)),
-                     helper.end());
+        // else, i have a flag that in case it isn't 1, i have to delete from the
+        // string that i created above "helper"
+        flag = 1;
+        result = ntohl(number) / power;
+      }
+
+      // put the result in the string in order to concat it to the char array
+      helper = to_string(result);
+      if (flag == 1) {
+
+        helper.erase(helper.end() + exp - 6, helper.end());
       }
       strcat(message, helper.c_str());
       break;
