@@ -127,62 +127,47 @@ int main(int argc, char *argv[]) {
                                  (sockaddr *)&addrUDP, &lenUDP);
             Assert(bytesRecv < 0,
                    "There was no info received from the UDP socket.\n");
-            messageUdp msg;
-            memcpy(&msg, buffer, bytesRecv);
+            messageUdp
+                msg;  // declaring the structure i will use to store the messages
+
+            // copy the information from buffer to the structure
+            memcpy(&msg, buffer, sizeof(messageUdp));
+
+            /*
+             temporary array of chars that i use to store the message that will
+             be shown in the client terminal
+            */
             char message[BUFLEN];
             bzero(&message, BUFLEN);
+
+            // the first 50 bytes are the topic, so i copy them into the
+            // structure
             strcpy(msg.topic, buffer);
-            strcpy(msg.ip, inet_ntoa(addrUDP.sin_addr));
-            msg.port = ntohs(addrUDP.sin_port);
+
+            // the byte located at buffer[50] is the data type (0/1/2/3)
             msg.data_type = *(uint8_t *)(buffer + 50);
+
+            // if there were bytes received from udp client
             if (bytesRecv > 0) {
-              if (msg.data_type == 0) {
-                strcat(message, "INT - ");
-                if (*(uint8_t *)(buffer + 51) == 1) {
-                  strcat(message, "-");
-                }
-                strcat(message,
-                       to_string(ntohl(*(uint32_t *)(buffer + 52))).c_str());
-              }
-              if (msg.data_type == 1) {
-                strcat(message, "SHORT_REAL - ");
-                string helper;
-                helper = to_string(ntohs(*(uint16_t *)(buffer + 51)) / 100.0);
-                helper.erase(helper.end() - 4, helper.end());
-                strcat(message, helper.c_str());
-              }
-              if (msg.data_type == 2) {
-                float decimal = 1;
-                strcat(message, "FLOAT - ");
-                if (*(int8_t *)(buffer + 51) == 1) {
-                  strcat(message, "-");
-                }
-                for (uint8_t j = 0; j < *(uint8_t *)(buffer + 56); j++) {
-                  decimal *= 10.0;
-                }
-                string helper;
-                if (decimal == 1) {
-                  helper = to_string(ntohl(*(uint32_t *)(buffer + 52)));
-                } else {
-                  helper =
-                      to_string(ntohl(*(uint32_t *)(buffer + 52)) / decimal);
-                  helper.erase(helper.end() - (6 - *(uint8_t *)(buffer + 56)),
-                               helper.end());
-                }
-                strcat(message, helper.c_str());
-              }
-              if (msg.data_type == 3) {
-                strcpy(message, "");
-                string str(buffer + 51);
-                strcat(message, str.c_str());
-              }
+              parsingUDP(msg, message, buffer);
             }
             memset(msg.data, 0, sizeof(msg));
+
+            // put in the data array the message built previously
             strcat(msg.data, message);
+
+            // setting the ip
+            strcat(msg.ip, inet_ntoa(addrUDP.sin_addr));
+
+            // setting the port
+            msg.port = ntohs(addrUDP.sin_port);
+
             // sending the information to all of the clients
             for (int x = 0; x < subCont; x++) {
-              send(subscribers[x].socket, (char *)&msg, sizeof(messageUdp), 0);
+              send(subscribers[x].socket, &msg, sizeof(messageUdp), 0);
             }
+
+            // setting the whole vector, in order to not have leaks
             memset(msg.topic, 0, sizeof(msg));
             memset(msg.data, 0, sizeof(msg));
             break;

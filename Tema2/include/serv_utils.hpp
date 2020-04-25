@@ -42,7 +42,7 @@ using namespace std;
     }                                            \
   } while (0)
 
-#define BUFLEN 1600           // the buffer's maximum length
+#define BUFLEN 1576           // the buffer's maximum length
 #define MAX_SUBSCRIBERS 1000  // the max number of clients
 #define DISCONNECT 0          // bytes received = 0
 
@@ -51,6 +51,12 @@ using namespace std;
 #define UDPCONNECTION 2
 #define EXITAPP 3
 #define SUBANDUNSUB 4
+
+// used for the switch in the udp parsing method
+#define INT 0
+#define SHORT_REAL 1
+#define FLOAT 2
+#define STRING 3
 
 struct messageUdp {
   char topic[50];
@@ -375,6 +381,79 @@ int updateFD(int sockTCPnew, int fdmax) {
     fdmax = sockTCPnew;
   }
   return fdmax;
+}
+
+void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
+  uint8_t sign = *(uint8_t *)(buffer + 51);
+  switch (msg.data_type) {
+    // the message array stores what will be shown in the client terminal
+    case INT: {
+      strcat(message, "- INT - ");
+
+      // if the sign is 1, which means the bit is set, then add a -
+      if (sign == 1) {
+        strcat(message, "-");
+      }
+
+      /*
+        add to the char array the rest of the "data array", which means from
+        52-1550 bytes.
+      */
+      strcat(message, to_string(ntohl(*(uint32_t *)(buffer + 52))).c_str());
+      break;
+    }
+    case SHORT_REAL: {
+      strcat(message, "- SHORT_REAL - ");
+
+      // i have created an auxiliary string in order to manage the string
+      string helper;
+      float res;
+      uint16_t value = ntohs(*(uint16_t *)(buffer + 51));
+
+      /*
+       value is storing the short int value from buffer
+       the number is multiplied by 100 in ordered to be stored as an int
+       so we have to divide it to 100.
+      */
+      res = (float)value;
+      res = res / 100.0;
+      helper = to_string(res);
+
+      /*
+       the division gives us 6 decimals, but we need only 2, so i delete the last
+       four ones that are in the string
+      */
+      helper.erase(helper.end() - 4, helper.end());
+      strcat(message, helper.c_str());
+      break;
+    }
+    case FLOAT: {
+      float decimal = 1;
+      strcat(message, "- FLOAT - ");
+      if (*(int8_t *)(buffer + 51) == 1) {
+        strcat(message, "-");
+      }
+      for (uint8_t j = 0; j < *(uint8_t *)(buffer + 56); j++) {
+        decimal *= 10.0;
+      }
+      string helper;
+      if (decimal == 1) {
+        helper = to_string(ntohl(*(uint32_t *)(buffer + 52)));
+      } else {
+        helper = to_string(ntohl(*(uint32_t *)(buffer + 52)) / decimal);
+        helper.erase(helper.end() - (6 - *(uint8_t *)(buffer + 56)),
+                     helper.end());
+      }
+      strcat(message, helper.c_str());
+      break;
+    }
+    case STRING: {
+      strcpy(message, "");
+      string str(buffer + 51);
+      strcat(message, str.c_str());
+      break;
+    }
+  }
 }
 
 #endif  // SERV_UTILS_H

@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     if (FD_ISSET(sockfd, &multTmp)) {
       bzero(&buffer, BUFLEN);
       // declaring the buffer
-      bytesRecv = recv(sockfd, buffer, BUFLEN, 0);
+      bytesRecv = recv(sockfd, buffer, sizeof(messageUdp), 0);
       // receiving the messages sent from the server
       Assert(bytesRecv < 0, "Number of bytes should be greater than 0.\n");
       if (bytesRecv == 0) {
@@ -87,7 +87,6 @@ int main(int argc, char *argv[]) {
       recv_msg = (messageUdp *)buffer;
       cout << recv_msg->ip << ":" << recv_msg->port << " - " << recv_msg->topic
            << " " << recv_msg->data << endl;
-      
     }
   }
   close(sockfd);
