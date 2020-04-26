@@ -132,8 +132,8 @@ int main(int argc, char *argv[]) {
                                  (sockaddr *)&addrUDP, &lenUDP);
             Assert(bytesRecv < 0,
                    "There was no info received from the UDP socket.\n");
-            messageUdp
-                msg;  // declaring the structure i will use to store the messages
+            messageUdp msg;
+            // declaring the structure i will use to store the messages
 
             // copy the information from buffer to the structure
             memcpy(&msg, buffer, sizeof(messageUdp));
@@ -210,6 +210,7 @@ int main(int argc, char *argv[]) {
 
             if (bytesRecv == 0) {
               disconnectServer(subscribers, i, subCont);
+              subCont--;
 
               /*
                this line is used in order to not have a problem of a bad file

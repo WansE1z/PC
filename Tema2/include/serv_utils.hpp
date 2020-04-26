@@ -210,6 +210,7 @@ void verifySubUnsubCommand(int sockfd, char buffer[]) {
 void connectServer(sockaddr_in addrTCPnew, int bytesRecv, int clientCount,
                    vector<subscriber> &clients,
                    map<string, vector<messageUdp>> subscribersMsg, int sockfd) {
+  int contor = 0, flag = 0;
   /*
    if the number of bytes received is greater than 0, that means that the id
    was sent to the server, so we can post it.
@@ -221,32 +222,44 @@ void connectServer(sockaddr_in addrTCPnew, int bytesRecv, int clientCount,
         true, if not, that means the client is connected, so there is
         no reason to connect him twice.
       */
-
+      for (int i = 0; i < clientCount; i++) {
+        /*
+         if the client is already connected, do not connect him again, and set
+         his status to online
+         */
+        if (strcmp(reinterpret_cast<char *>(clients[i].id.data()),
+                   reinterpret_cast<char *>(clients[clientCount].id.data())) ==
+            0) {
+          clients[i].status = true;
+          contor = i;
+          flag = 1;
+          printf("%s is already connected.\n",
+                 reinterpret_cast<char *>(clients[i].id.data()));
+        }
+      }
       // needed to cast in order to print %s
-      printf("New client %s connected from %s:%hu.\n",
-             reinterpret_cast<char *>(clients[clientCount].id.data()),
-             inet_ntoa(addrTCPnew.sin_addr), ntohs(addrTCPnew.sin_port));
+      if (flag == 0) {
+        printf("New client %s connected from %s:%hu.\n",
+               reinterpret_cast<char *>(clients[clientCount].id.data()),
+               inet_ntoa(addrTCPnew.sin_addr), ntohs(addrTCPnew.sin_port));
 
-      // update client's status to online
-      clients[clientCount].status = true;
+        // update client's status to online
+        clients[clientCount].status = true;
+      }
 
       // iterate through the topics, and i send to the clients who are subbed at
       // those topics with the specific sfs
-      for (long unsigned int i = 0; i < clients[clientCount].topics.size();
-           i++) {
-        for (long unsigned int k = clients[clientCount].last_message[i] + 1;
-             k < subscribersMsg[clients[clientCount].topics[i]].size(); k++) {
-          send(sockfd, &subscribersMsg[clients[clientCount].topics[i]][k],
-               sizeof(subscribersMsg[clients[clientCount].topics[i]][k]), 0);
+      for (long unsigned int i = 0; i < clients[contor].topics.size(); i++) {
+        for (long unsigned int k = clients[contor].last_message[i] + 1;
+             k < subscribersMsg[clients[contor].topics[i]].size(); k++) {
+          send(sockfd, &subscribersMsg[clients[contor].topics[i]][k],
+               sizeof(subscribersMsg[clients[contor].topics[i]][k]), 0);
         }
 
         // update the clients last message position
-        clients[clientCount].last_message[i] =
-            subscribersMsg[clients[clientCount].topics[i]].size() - 1;
+        clients[contor].last_message[i] =
+            subscribersMsg[clients[contor].topics[i]].size() - 1;
       }
-    } else {
-      printf("The client %s is already connected.",
-             reinterpret_cast<char *>(clients[clientCount].id.data()));
     }
   }
 }
@@ -448,8 +461,8 @@ void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
       helper = to_string(res);
 
       /*
-       the division gives us 6 decimals, but we need only 2, so i delete the last
-       four ones that are in the string
+       the division gives us 6 decimals, but we need only 2, so i delete the
+       last four ones that are in the string
       */
       helper.erase(helper.end() - 4, helper.end());
 

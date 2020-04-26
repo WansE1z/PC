@@ -1,7 +1,7 @@
 CC = g++ 
 CFLAGS = -g -std=c++17 -Wall -Wextra -Wno-unused-parameter
 IP = 127.0.0.1
-PORT = 8000
+PORT = 8010
 ID = WansE
 
 build: server subscriber
