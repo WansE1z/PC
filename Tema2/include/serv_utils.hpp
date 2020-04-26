@@ -73,7 +73,7 @@ using namespace std;
 struct messageUdp {
   char topic[50];
   unsigned int data_type;
-  char data[1500];
+  char data[1520];
   char ip[16];
   uint16_t port;
 };
@@ -480,6 +480,7 @@ void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
     case FLOAT: {
       string helper;
       float power = 1;
+      int flag = 0;
       uint8_t exp = *(uint8_t *)(buffer + 56);
       uint32_t number = *(uint32_t *)(buffer + 52);
       strcat(message, "- FLOAT - ");
@@ -493,19 +494,23 @@ void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
       power = pow(10, exp);
 
       // the conditions below return the right string
-      if (power == 1) {
-        helper = to_string(ntohl(number));
-      } else {
+      if (power != 1) {
         helper = to_string(ntohl(number) / power);
+        flag = 1;
+      } else {
+        helper = to_string(ntohl(number));
+      }
 
+      if (flag == 1){
         // delete the last two decimals in order to keep the first 4
         helper.erase(helper.end() - 2, helper.end());
       }
+
       strcat(message, helper.c_str());
       break;
     }
     case STRING: {
-      strcat(message, "- STRING - ");
+      strcat (message, "- STRING - ");
       string str(buffer + 51);
       // using the string constructor, make a string containing the payload
 
