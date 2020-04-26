@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
             Assert(bytesRecv < 0,
                    "There was no info received from the UDP socket.\n");
             messageUdp msg;
-            // declaring the structure i will use to store the messages
+              // declaring the structure i will use to store the messages
 
             // copy the information from buffer to the structure
             memcpy(&msg, buffer, sizeof(messageUdp));
