@@ -7,6 +7,8 @@
         "vector": "cpp",
         "ostream": "cpp",
         "*.tcc": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "sstream": "cpp",
+        "regex": "cpp"
     }
 }

@@ -6,7 +6,7 @@ int main(int argc, char *argv[]) {
   sockaddr_in serv_addr;
   char buffer[BUFLEN];
   bool exitFlag = false;
-  messageUdp *recv_msg;
+  messageUdp *message;
 
   Assert(argc != 4, "Usage: ./subscriber <ID> <IP_SERVER> <PORT_SERVER>. \n");
   Assert(idLen > 10, "The ID can't be more than 10 characters.");
@@ -84,9 +84,9 @@ int main(int argc, char *argv[]) {
         return 0;
       }
       // print what you receive
-      recv_msg = (messageUdp *)buffer;
-      cout << recv_msg->ip << ":" << recv_msg->port << " - " << recv_msg->topic
-           << " " << recv_msg->data << endl;
+      message = (messageUdp *)buffer;
+      cout << message->ip << ":" << message->port << " - " << message->topic
+           << " " << message->data << endl;
     }
   }
   close(sockfd);

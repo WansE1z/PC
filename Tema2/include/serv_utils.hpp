@@ -210,7 +210,7 @@ void verifySubUnsubCommand(int sockfd, char buffer[]) {
 void connectServer(sockaddr_in addrTCPnew, int bytesRecv, int clientCount,
                    vector<subscriber> &clients,
                    map<string, vector<messageUdp>> subscribersMsg, int sockfd) {
-  int contor = 0, flag = 0;
+  int counter = 0, flag = 0;
   /*
    if the number of bytes received is greater than 0, that means that the id
    was sent to the server, so we can post it.
@@ -226,15 +226,22 @@ void connectServer(sockaddr_in addrTCPnew, int bytesRecv, int clientCount,
         /*
          if the client is already connected, do not connect him again, and set
          his status to online
-         */
+         i had to cast to char* because the id from clients structure is a
+         vector, and in order to use strcmp i had to convert them to char*
+        */
         if (strcmp(reinterpret_cast<char *>(clients[i].id.data()),
                    reinterpret_cast<char *>(clients[clientCount].id.data())) ==
             0) {
+          /*
+            set the status of the client to online
+            the counter keeps track of the id of the user
+            flag is used in order to print that the client has connected
+          */
           clients[i].status = true;
-          contor = i;
+          counter = i;
           flag = 1;
           printf("%s is already connected.\n",
-                 reinterpret_cast<char *>(clients[i].id.data()));
+                 reinterpret_cast<char *>(clients[counter].id.data()));
         }
       }
       // needed to cast in order to print %s
@@ -249,16 +256,16 @@ void connectServer(sockaddr_in addrTCPnew, int bytesRecv, int clientCount,
 
       // iterate through the topics, and i send to the clients who are subbed at
       // those topics with the specific sfs
-      for (long unsigned int i = 0; i < clients[contor].topics.size(); i++) {
-        for (long unsigned int k = clients[contor].last_message[i] + 1;
-             k < subscribersMsg[clients[contor].topics[i]].size(); k++) {
-          send(sockfd, &subscribersMsg[clients[contor].topics[i]][k],
-               sizeof(subscribersMsg[clients[contor].topics[i]][k]), 0);
+      for (long unsigned int i = 0; i < clients[counter].topics.size(); i++) {
+        for (long unsigned int k = clients[counter].last_message[i] + 1;
+             k < subscribersMsg[clients[counter].topics[i]].size(); k++) {
+          send(sockfd, &subscribersMsg[clients[counter].topics[i]][k],
+               sizeof(subscribersMsg[clients[counter].topics[i]][k]), 0);
         }
 
         // update the clients last message position
-        clients[contor].last_message[i] =
-            subscribersMsg[clients[contor].topics[i]].size() - 1;
+        clients[counter].last_message[i] =
+            subscribersMsg[clients[counter].topics[i]].size() - 1;
       }
     }
   }
@@ -498,6 +505,7 @@ void parsingUDP(messageUdp &msg, char message[], char buffer[]) {
       break;
     }
     case STRING: {
+      strcat(message, "- STRING - ");
       string str(buffer + 51);
       // using the string constructor, make a string containing the payload
 
