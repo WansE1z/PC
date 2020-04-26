@@ -1,5 +1,6 @@
 CC = g++ 
 CFLAGS = -g -std=c++17 -Wall -Wextra -Wno-unused-parameter
+MFLAGS= --leak-check=full --show-leak-kinds=all --track-origins=yes
 IP = 127.0.0.1
 PORT = 8000
 ID = WansE
@@ -38,6 +39,5 @@ run_subscriber2: clean subscriber
 udp:
 	python3 ./checker/udp_client.py --input_file ./checker/sample_payloads.json --delay 10 --mode all_once $(IP) $(PORT)
 
-MFLAGS= --leak-check=full --show-leak-kinds=all --track-origins=yes
 memory: clean build
 	valgrind $(MFLAGS) ./server $(PORT)
