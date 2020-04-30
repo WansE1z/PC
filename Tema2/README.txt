@@ -56,7 +56,8 @@ concerned of are the fact that if you subscribe to the same topic, the feedback
  will be that you subscribed to the topic, but in the server it appear that you
  didn't, so it is just a mistake of printing, and also if you connect on the 
 same id in the same time, will appear that you connected but in fact in the 
-server it appears that the id is taken.
+server it appears that the id is taken, and that happens because that text 
+appears from the makefile.
 
 ## Running the server-client 
 
