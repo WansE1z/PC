@@ -13,3 +13,6 @@ clean:
 
 memory: clean client
 	valgrind $(MFLAGS) ./client
+
+beauty: 
+	clang-format -i -style=file *.c
