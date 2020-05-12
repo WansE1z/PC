@@ -2,8 +2,8 @@ CC=gcc -g
 CFLAGS=-I.
 MFLAGS= --leak-check=full --show-leak-kinds=all --track-origins=yes
 
-client: client.c requests.c helpers.c buffer.c
-	$(CC) -o client client.c requests.c helpers.c buffer.c -Wall
+client: client.c requests.c helpers.c buffer.c parson.c
+	$(CC) -o client client.c requests.c helpers.c buffer.c parson.c -Wall
 
 run: client
 	./client

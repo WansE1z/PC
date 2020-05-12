@@ -1,6 +1,7 @@
 #ifndef _HELPERS_
 #define _HELPERS_
 
+#define DBLBUFLEN 9182
 #define BUFLEN 4096
 #define LINELEN 1000
 
