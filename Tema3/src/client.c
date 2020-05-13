@@ -25,7 +25,8 @@ int main(int argc, char *argv[]) {
       password[BUFLEN], token[BUFLEN], cookie[100], publisher[BUFLEN],
       genre[BUFLEN];
   char ip[16] = "3.8.116.10";
-  bool exitFlag = false, logged, entered_library = false, goodFormat = true;
+  bool exitFlag = false, logged, entered_library = false, goodFormat = true,
+  notGoodId = false;
   while (!exitFlag) {
     scanf("%s", task);
     scanf("%*c");
@@ -258,6 +259,20 @@ int main(int argc, char *argv[]) {
           printf("id=");
           scanf("%s", read);
 
+          // in the below code, i iterate in the array to check
+          // if the id is a string not containing numbers
+          for (int i = 0; i < strlen(read); i++){
+            if (isdigit(read[i]) == 0){
+              notGoodId = true;
+            } else {
+              notGoodId = false;
+            }
+          }
+          if (notGoodId){
+            printf("The id must be an int.\n");
+            break;
+          }
+
           // concat to the api the id
           strcat(api, read);
 
@@ -405,6 +420,20 @@ int main(int argc, char *argv[]) {
           // print the prompt, and read the id
           printf("id=");
           scanf("%s", read);
+
+          // in the below code, i iterate in the array to check
+          // if the id is a string not containing numbers
+          for (int i = 0; i < strlen(read); i++){
+            if (isdigit(read[i]) == 0){
+              notGoodId = true;
+            } else {
+              notGoodId = false;
+            }
+          }
+          if (notGoodId){
+            printf("The id must be an int.\n");
+            break;
+          }
 
           // concat the id to the api
           strcat(api, read);
