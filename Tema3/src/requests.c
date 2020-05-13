@@ -1,4 +1,4 @@
-#include "requests.h"
+#include "../include/requests.h"
 
 #include <arpa/inet.h>
 #include <netdb.h>      /* struct hostent, gethostbyname */
@@ -9,7 +9,7 @@
 #include <sys/socket.h> /* socket, connect */
 #include <unistd.h>     /* read, write, close */
 
-#include "helpers.h"
+#include "../include/helpers.h"
 
 // function that creates a string that will be used by the delete request
 char *compute_delete_request(char *host, char *url, char *query_params,
@@ -18,8 +18,6 @@ char *compute_delete_request(char *host, char *url, char *query_params,
   char *line = calloc(LINELEN, sizeof(char));
 
   // write the method name, URL, request params (if any) and protocol type
-
-  char msg[BUFLEN];
   memset(line, 0, LINELEN);
   if (query_params != NULL) {
     sprintf(line, "DELETE %s?%s HTTP/1.1", url, query_params);
@@ -35,8 +33,9 @@ char *compute_delete_request(char *host, char *url, char *query_params,
   // add headers and/or cookies, according to the protocol format
   if (cookies != NULL) {
     sprintf(line, "Cookie: ");
-    sprintf(msg, "%s ", cookies[0]);
-    strcat(line, msg);
+    strcat(line, "");
+    strcat(line, cookies[0]);
+    strcat(line, " ");
     compute_message(message, line);
   }
 
@@ -56,7 +55,6 @@ char *compute_get_request(char *host, char *url, char *query_params,
                           char **cookies, int cookies_count, char *jwt) {
   char *message = calloc(BUFLEN, sizeof(char));
   char *line = calloc(LINELEN, sizeof(char));
-  char msg[BUFLEN];
 
   // write the method name, URL, request params (if any) and protocol type
 
@@ -76,8 +74,9 @@ char *compute_get_request(char *host, char *url, char *query_params,
   // add headers and/or cookies, according to the protocol format
   if (cookies != NULL) {
     sprintf(line, "Cookie: ");
-    sprintf(msg, "%s ", cookies[0]);
-    strcat(line, msg);
+    strcat(line, "");
+    strcat(line, cookies[0]);
+    strcat(line, " ");
     compute_message(message, line);
   }
 
@@ -87,7 +86,7 @@ char *compute_get_request(char *host, char *url, char *query_params,
     compute_message(message, line);
   }
 
-  // Step 4: add final new line
+  // add final new line
   strcat(message, "\r\n");
   return message;
 }
@@ -100,7 +99,6 @@ char *compute_post_request(char *host, char *url, char *content_type,
   char *message = calloc(BUFLEN, sizeof(char));
   char *line = calloc(LINELEN, sizeof(char));
   char *bodydata_buf = calloc(LINELEN, sizeof(char));
-  char msg[BUFLEN];
   // write the method name, URL and protocol type
 
   memset(line, 0, LINELEN);
@@ -126,8 +124,8 @@ char *compute_post_request(char *host, char *url, char *content_type,
 
   if (body_data != NULL) {
     memset(bodydata_buf, 0, LINELEN);
-    sprintf(msg, "%s", body_data[0]);
-    strcat(bodydata_buf, msg);
+    strcat(bodydata_buf, "");
+    strcat(bodydata_buf, body_data[0]);
   }
 
   size = strlen(bodydata_buf);

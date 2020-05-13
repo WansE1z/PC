@@ -1,4 +1,4 @@
-#include "helpers.h"
+#include "../include/helpers.h"
 
 #include <arpa/inet.h>
 #include <netdb.h>      /* struct hostent, gethostbyname */
@@ -9,12 +9,17 @@
 #include <sys/socket.h> /* socket, connect */
 #include <unistd.h>     /* read, write, close */
 
-#include "buffer.h"
+#include "../include/buffer.h"
 
 #define HEADER_TERMINATOR "\r\n\r\n"
 #define HEADER_TERMINATOR_SIZE (sizeof(HEADER_TERMINATOR) - 1)
 #define CONTENT_LENGTH "Content-Length: "
 #define CONTENT_LENGTH_SIZE (sizeof(CONTENT_LENGTH) - 1)
+
+/*
+  This file has been made by the team of PC, so I do not own any copyright
+  The code has been commented by them in the header file
+*/
 
 void error(const char *msg) {
   perror(msg);
@@ -118,5 +123,3 @@ char *receive_from_server(int sockfd) {
   buffer_add(&buffer, "", 1);
   return buffer.data;
 }
-
-char *basic_extract_json_response(char *str) { return strstr(str, "{\""); }

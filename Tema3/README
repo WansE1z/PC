@@ -1,0 +1,96 @@
+# Communication with REST API - Homework Nr. 3
+
+This is a project that represents the second homework for the Communication 
+Protocols Course.
+
+## Project structure
+``` bash
+|-- include
+|   |-- buffer.h
+|   |-- helpers.h
+|   |-- parson.h
+|   |-- requests.h
+|   |-- utils.h
+|-- src
+|   |-- buffer.c
+|   |-- client.c
+|   |-- helpers.c
+|   |-- parson.c
+|   |-- requests.c
+|   |-- utils.c
+```
+
+## Important note
+To run the app : make run
+
+Andrei Stanca mentioned that it is ok if I use the "helper" files from Lab 10
+if I mention in the README, so I have used "buffer.c/buffer.h && helpers.c/
+helpers.h && requests.c/requests.h" from Lab10, made by the team of PC.
+Also, I have used parson.c/parson.h in order to parse json objects and values,
+in order to make a post request as an application/json.
+
+### Files
+- buffer.c / helpers.c / requests.c
+I have used these files from Lab10 in order to gain access to some helper
+functions which helped me to have more information about the response from the
+server, sending the details to the server, opening/closing connection,
+but most important to compute a get/delete/post request.
+
+- utils.c
+This file contains a single function called clientSwitch, used for the switch
+in the main file (client.c), in order to look nicer.
+
+- client.c
+This is the main file, that contains the main logic of the homework.
+
+### Homework overview and documentation
+
+I have chosen the parson library in order to parse the json, because first of
+all I have used the C language of this homework, and also because I have seen
+that the documentation that the file had was well written, and I could
+understand it easier. I have used parson for register/login part, to make
+an applicaton/json post request, to parse the username and password in a 
+"pretty" way, as shown here :
+{
+    "username" : "username",
+    "password" : "password"
+}
+I have used the parson also for the add_book function, with the same reason:
+{
+    "title": String,
+    "author": String,
+    "genre": String,
+    "page_count": Number
+    "publisher": String
+}
+
+I have tried my best to cover as many errors for the inputs as possible,
+including throwing errors for the main problems specified in the statement
+- if the username is already used
+- if the login is not valid
+- enter_library -> if the user doesn't have access
+- get_books -> if the user doesn't have access
+- get_book -> if the user doesn't have access
+           -> if the id isn't correct
+- add_book -> if the user doesn't have access
+           -> if the information does not respect the format including
+           (negative id, id that isn't in the list of books, blank String
+           for title,author,publisher,genre)
+- delete_book -> if the user doesn't have access
+              -> if the id isn't valid
+- logout    -> if the user isn't logged in
+
+Beside this things ,I have treated many more errors, specified in the comments.
+
+### Notes
+For more details regarding the implementation, i have explained as best as I
+could what I did and why.
+
+### Makefile install and run
+make -> compiles the files
+make run -> runs the client (./client)
+make clean -> cleans the .o files
+make memory -> check memory issues using valgrind
+make beauty -> use clang format to format the code in my personal style
+
+Copyright Ionita Radu-Alexandru 322CA

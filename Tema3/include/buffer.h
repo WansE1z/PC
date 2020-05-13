@@ -1,11 +1,11 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 typedef struct {
-    char *data;
-    size_t size;
+  char *data;
+  size_t size;
 } buffer;
 
 // initializes a buffer

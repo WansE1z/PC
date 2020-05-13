@@ -1,4 +1,9 @@
-#include "buffer.h"
+#include "../include/buffer.h"
+
+/*
+  This file has been made by the team of PC, so I do not own any copyright
+  The code has been commented by them in the header file
+*/
 
 buffer buffer_init(void) {
   buffer buffer;
