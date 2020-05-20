@@ -25,19 +25,26 @@ int main(int argc, char *argv[]) {
   addrTCP.sin_family = AF_INET;
   addrTCP.sin_port = htons(portNr);
   addrTCP.sin_addr.s_addr = INADDR_ANY;
+
   addrUDP.sin_family = AF_INET;
   addrUDP.sin_port = htons(portNr);
   addrUDP.sin_addr.s_addr = INADDR_ANY;
 
   verify = bind(sockTCP, (sockaddr *)&addrTCP, sizeof(sockaddr));
   Assert(verify < 0, "Can't bind TCP socket.\n");
+
+  verify = bind(sockUDP, (sockaddr *)&addrUDP, sizeof(sockaddr));
+  Assert(verify < 0, "Can't bind UDP socket.\n");
+
   verify = listen(sockTCP, MAX_CLIENTS);
   Assert(verify < 0, "Can't listen the TCP socket.\n");
 
   FD_ZERO(&multRead);
+  FD_SET(sockUDP, &multRead);
   FD_SET(sockTCP, &multRead);
   FD_SET(0, &multRead);
-  fdmax = sockTCP;
+
+  fdmax = max(sockTCP,sockUDP);
 
   while (1) {
     if (exitFlag) {
@@ -75,6 +82,7 @@ int main(int argc, char *argv[]) {
                                 &lenUDP);
             Assert(bytesRecv < 0,
                   "There was no info received from the UDP socket.\n");
+            cout << "Am ajuns aici " << buffer;
             break;
           }
           case EXITAPP: {
@@ -113,10 +121,10 @@ int main(int argc, char *argv[]) {
               /*
                 clientii trimit intre ei detalii (multiplexare)
               */
+              // i == clients[j].socket - trimite numai lui
+              // i != clients[j].socket - trimite tuturor exceptand lui
               for (int j = 0; j < clientCount; j++) {
-                if (i != clients[j].socket){
-                  send(clients[j].socket, buffer, BUFLEN, 0);
-                }
+                send(clients[j].socket, buffer, BUFLEN, 0);
               }
             }
             break;
