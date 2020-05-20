@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
             } else {
               exitFlag = false;
               /*
-                trimit la clienti detalii din server
+                ce scriu in server va fi trimis catre clienti!!!
               */
               for (int j = 0; j < clientCount; j++) {
                 send(clients[j].socket, buffer, BUFLEN, 0);
@@ -119,6 +119,7 @@ int main(int argc, char *argv[]) {
               cout << buffer; // informatia de la clienti se scrie in server
 
               /*
+                buffer-ul de este citit aici va fi trimis catre toti clientii
                 clientii trimit intre ei detalii (multiplexare)
               */
               // i == clients[j].socket - trimite numai lui

@@ -139,10 +139,10 @@ int main(int argc, char *argv[]) {
               memset(buffer, 0, BUFLEN);
               strcat(buffer, "Candidatul 1 are : ");
               strcat(buffer, to_string(vote1).c_str());
-              strcat(buffer, " voturi\n");
+              strcat(buffer, " voturi");
               strcat(buffer, "Candidatul 0 are : ");
               strcat(buffer, to_string(vote0).c_str());
-              strcat(buffer, " voturi\n");
+              strcat(buffer, " voturi");
 
               for (int j = 0; j < clientCount; j++) {
                 if (i == clients[j].socket) {
